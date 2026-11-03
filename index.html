@@ -120,7 +120,7 @@ form.panel input{min-height:44px}
 </head>
 <body>
 <header class="top"><div class="in">
-  <div class="brand">Collecte ONCA REDI Massa <small>situation de référence · V5</small></div>
+  <div class="brand">Collecte ONCA REDI Massa <small>situation de référence · V5.1</small></div>
   <div class="spacer"></div>
   <span id="net" class="net">…</span>
   <nav class="tabs" id="tabs" aria-label="Vues"></nav>
@@ -132,7 +132,7 @@ form.panel input{min-height:44px}
 <script>
 (function(){
 "use strict";
-const FORM_VERSION="V5";
+const FORM_VERSION="V5.1";
 /* ============================ DONNÉES DE RÉFÉRENCE ============================ */
 const QUOTAS=[ // note d'échantillonnage : questionnaires complets par strate
  {s:"805",n:"Belfaa",c:[21,13,4]},{s:"806",n:"Oukhrib",c:[26,15,10]},{s:"807",n:"Toussous",c:[25,12,6]},
@@ -150,20 +150,21 @@ const has=(v,c)=>Array.isArray(v)&&v.includes(c);
 const num=v=>(v===""||v==null||isNaN(+v))?null:+v;
 const MODULES=[
 {id:"m0",code:"0",title:"Identification et consentement",min:2,qs:[
- {id:"idExpl",code:"0.1",t:"sample",l:"Identifiant de l'exploitation",h:"Choisir dans la liste tirée, ou saisir l'identifiant si la liste n'est pas chargée."},
+ {id:"idExpl",code:"0.1",t:"sample",l:"Identifiant de l'exploitation",h:"Choisir dans la liste tirée. Pour une remplaçante, utiliser le bouton « Commencer la remplaçante » de l'accueil.",chk:()=>chkIdExpl()},
  {id:"strate",code:"0.2a",t:"one",l:"Strate",o:[["805","805 Belfaa"],["806","806 Oukhrib"],["807","807 Toussous"],["808","808 Tin Ait Brahim"],["809","809 El Khmis"],["IP","Irrigation privée"]]},
  {id:"classe",code:"0.2b",t:"one",l:"Classe de superficie",o:[["1","0 – 2 ha"],["2","2 – 5 ha"],["3","> 5 ha"],["9","À établir (irrigation privée)"]]},
  {id:"commune",code:"0.3a",t:"text",l:"Commune",req:false},
  {id:"douar",code:"0.3b",t:"text",l:"Douar",req:false},
  {id:"gps",code:"0.4",t:"group",l:"Coordonnées GPS (degrés décimaux)",h:"Toucher « Relever la position » devant l'exploitation (siège ou parcelle principale).",f:[["lat","Latitude",-90,90],["lon","Longitude",-180,180],["acc","Précision (m)",0,100000,false]],req:false,dec:true},
- {id:"titulaire",code:"0.5",t:"one",l:"Exploitation titulaire ou remplaçante",o:[["1","Titulaire"],["2","Remplaçante"]]},
- {id:"idRemp",code:"0.5b",t:"text",l:"Identifiant de l'exploitation remplacée",rel:a=>a.titulaire==="2"},
- {id:"motifRemp",code:"0.5c",t:"one",l:"Motif du remplacement",o:[["1","Introuvable après 2 passages"],["2","Refus"],["3","Exploitation inactive"],["4","Doublon"]],rel:a=>a.titulaire==="2"},
+ {id:"titulaire",code:"0.5",t:"one",l:"Exploitation titulaire ou remplaçante",h:"Rempli selon la liste tirée.",o:[["1","Titulaire"],["2","Remplaçante"]],chk:()=>chkTitulaire()},
+ {id:"idRemp",code:"0.5b",t:"text",l:"Identifiant de l'exploitation remplacée",rel:a=>a.titulaire==="2",chk:()=>chkRemp()},
+ {id:"motifRemp",code:"0.5c",t:"one",l:"Motif du remplacement",o:[["1","Introuvable après 2 passages"],["2","Refus"],["3","Exploitation inactive"],["4","Doublon"]],rel:a=>a.titulaire==="2",chk:()=>chkMotif()},
  {id:"codeEnq",code:"0.6",t:"text",l:"Code enquêteur",h:"Rempli avec le code de connexion."},
- {id:"consent",code:"0.7",t:"one",l:"Lire en entier : « Nous réalisons, pour l'ONCA, une enquête sur les exploitations agricoles de la zone afin de mieux adapter le conseil agricole. L'entretien dure environ 40 minutes. Votre participation est volontaire : vous pouvez refuser de répondre à une question ou arrêter à tout moment, sans aucune conséquence sur les services ou aides dont vous bénéficiez. Vos réponses sont confidentielles et ne seront utilisées que de façon anonyme, à des fins statistiques (loi 09-08). Acceptez-vous de participer ? »",o:YN,stop:"2"},
- {id:"motifRefus",code:"0.7b",t:"one",l:"Motif du refus",o:[["1","Manque de temps"],["2","Méfiance / crainte d'un contrôle"],["3","Pas intéressé"],["4","Autre"]],rel:a=>a.consent==="2"},
- {id:"motifRefusP",code:"0.7c",t:"text",l:"Préciser le motif",rel:a=>a.consent==="2"&&a.motifRefus==="4"},
- {id:"active",code:"0.8",t:"one",l:"L'exploitation a-t-elle été cultivée pendant la campagne 2025-2026 ?",o:YN,rel:a=>a.consent==="1",stop:"2"}
+ {id:"contact",code:"0.6b",t:"one",l:"Résultat de la prise de contact",o:[["1","Exploitant rencontré"],["2","Introuvable après 2 passages"],["3","Doublon (déjà enquêté sous un autre identifiant)"]]},
+ {id:"consent",code:"0.7",t:"one",l:"Lire en entier : « Nous réalisons, pour l'ONCA, une enquête sur les exploitations agricoles de la zone afin de mieux adapter le conseil agricole. L'entretien dure environ 40 minutes. Votre participation est volontaire : vous pouvez refuser de répondre à une question ou arrêter à tout moment, sans aucune conséquence sur les services ou aides dont vous bénéficiez. Vos réponses sont confidentielles et ne seront utilisées que de façon anonyme, à des fins statistiques (loi 09-08). Acceptez-vous de participer ? »",o:YN,rel:a=>a.contact==="1",stop:"2"},
+ {id:"motifRefus",code:"0.7b",t:"one",l:"Motif du refus",o:[["1","Manque de temps"],["2","Méfiance / crainte d'un contrôle"],["3","Pas intéressé"],["4","Autre"]],rel:a=>a.contact==="1"&&a.consent==="2"},
+ {id:"motifRefusP",code:"0.7c",t:"text",l:"Préciser le motif",rel:a=>a.contact==="1"&&a.consent==="2"&&a.motifRefus==="4"},
+ {id:"active",code:"0.8",t:"one",l:"L'exploitation a-t-elle été cultivée pendant la campagne 2025-2026 ?",o:YN,rel:a=>a.contact==="1"&&a.consent==="1",stop:"2"}
 ]},
 {id:"mA",code:"A",title:"Exploitant et ménage",min:4,qs:[
  {id:"A1",t:"one",l:"Le répondant est-il le chef d'exploitation ?",o:[["1","Oui"],["2","Non, gérant"],["3","Non, membre de la famille"]]},
@@ -291,7 +292,7 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 function toast(m){const t=document.getElementById("toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2800)}
 function saveLocal(){LS.set("redi_outbox",S.outbox);LS.set("redi_drafts",S.drafts)}
 const isSup=()=>S.user&&S.user.role==="superviseur";
-const ERR={auth:"Code ou PIN incorrect, ou compte désactivé.",droits:"Action réservée au superviseur.",introuvable:"Questionnaire introuvable sur le serveur.",donnees:"Données refusées par le serveur.",serveur:"Erreur du serveur Google.",no_api:"Adresse du serveur non configurée.",reseau:"Pas de réponse du serveur (réseau ?).",action:"Action inconnue."};
+const ERR={auth:"Code ou PIN incorrect, ou compte désactivé.",droits:"Action réservée au superviseur.",introuvable:"Questionnaire introuvable sur le serveur.",donnees:"Données refusées par le serveur.",serveur:"Erreur du serveur Google.",no_api:"Adresse du serveur non configurée.",reseau:"Pas de réponse du serveur (réseau ?).",action:"Action inconnue.",doublon:"Exploitation déjà enquêtée.",deja_remplace:"Exploitation déjà remplacée."};
 
 /* ============================ SERVEUR (Google Apps Script) ============================ */
 async function api(action,p={},cred){
@@ -302,7 +303,7 @@ async function api(action,p={},cred){
  try{r=await fetch(S.api,{method:"POST",body:JSON.stringify(Object.assign({action,code:c.code,pin:c.pin},p)),signal:ctrl.signal,redirect:"follow"})}
  catch(e){throw{code:"reseau"}}finally{clearTimeout(t)}
  let j;try{j=await r.json()}catch(e){throw{code:"serveur"}}
- if(!j.ok)throw{code:j.err||"serveur",msg:j.msg};
+ if(!j.ok)throw Object.assign({},j,{code:j.err||"serveur"});
  return j;
 }
 async function refresh(quiet){
@@ -322,8 +323,11 @@ async function sync(){
  if(syncing||!S.user||!S.outbox.length||!navigator.onLine||!S.api)return;syncing=true;
  const queue=[...S.outbox];let sent=0;
  for(const s of queue){
-  try{const fl=flatten(s);await api("submit",{sub:s,row:fl.main,cult:fl.cult});S.outbox=S.outbox.filter(x=>x.id!==s.id);saveLocal();sent++}
-  catch(e){S.note="Envoi interrompu : "+(ERR[e.code]||e.code)+" Les questionnaires restent sur ce téléphone.";break}
+  if(s._err)continue;
+  try{const sub=Object.assign({},s);delete sub._err;const fl=flatten(sub);await api("submit",{sub,row:fl.main,cult:fl.cult});S.outbox=S.outbox.filter(x=>x.id!==s.id);saveLocal();sent++}
+  catch(e){
+   if(e.code==="doublon"||e.code==="deja_remplace"){const it=S.outbox.find(x=>x.id===s.id);if(it){it._err={code:e.code,par:e.par||"",statut:e.statut||"",par2:e.par2||""};saveLocal()}continue}
+   S.note="Envoi interrompu : "+(ERR[e.code]||e.code)+" Les questionnaires restent sur ce téléphone.";break}
  }
  syncing=false;if(sent){toast(sent+" questionnaire(s) envoyé(s)");await refresh(true)}else render();
 }
@@ -383,9 +387,87 @@ function dictRows(){
  return dict;
 }
 
+/* ============================ ÉCHANTILLON : DOUBLONS ET REMPLACEMENT ============================ */
+// Règle de la note d'échantillonnage : une exploitation = un seul questionnaire ; remplacement dans la même strate
+// et la même classe, par la première exploitation disponible de la réserve (ordre du tirage) ; motifs admis :
+// introuvable après deux passages, refus, exploitation inactive, doublon.
+const MOTIF_OF={introuvable:"1",refus:"2",inactive:"3",doublon:"4"};
+const STATUT_LBL={complet:"complet",refus:"refus",inactive:"exploitation inactive",introuvable:"introuvable",doublon:"doublon",brouillon:"brouillon"};
+function statusOf(a){return a.contact==="2"?"introuvable":a.contact==="3"?"doublon":a.consent==="2"?"refus":a.active==="2"?"inactive":"complet"}
+const nid=x=>String(x||"").trim().toLowerCase();
+// Tout ce que la tablette connaît : questionnaires envoyés, en attente et brouillons
+function localRecords(exId){
+ const out=[];
+ S.outbox.forEach(s=>{if(s.id!==exId)out.push({qid:s.id,idExpl:s.a.idExpl,strate:s.a.strate,classe:s.a.classe,status:s.status,remplace:s.a.titulaire==="2"?s.a.idRemp:"",src:"attente"})});
+ S.mine.forEach(m=>{if(m.id!==exId&&!S.outbox.some(o=>o.id===m.id))out.push({qid:m.id,idExpl:m.idExpl,strate:m.strate,classe:m.classe,status:m.status,remplace:m.remplace||"",src:"envoye"})});
+ Object.values(S.drafts).forEach(d=>{if(d.id!==exId)out.push({qid:d.id,idExpl:d.a.idExpl,strate:d.a.strate,classe:d.a.classe,status:"brouillon",remplace:d.a.titulaire==="2"?d.a.idRemp:"",src:"brouillon"})});
+ return out;
+}
+// Statut déjà connu pour une exploitation (tablette puis serveur, selon la liste chargée le matin)
+function knownOutcome(id,exId){
+ const l=localRecords(exId).find(r=>nid(r.idExpl)===nid(id)&&r.src!=="brouillon");if(l)return{status:l.status,par:"vous"};
+ const r=S.sample.find(x=>nid(x.id)===nid(id));if(r&&r.etat&&r.qid!==exId)return{status:r.etat,par:r.par};
+ return null;
+}
+function isReplaced(id,f){
+ if(localRecords(f&&f.id).some(r=>nid(r.remplace)===nid(id)))return true;
+ const r=S.sample.find(x=>nid(x.id)===nid(id));return!!(r&&r.remplacePar&&(!f||nid(r.remplacePar)!==nid(f.a.idExpl)));
+}
+function usedReserve(id,f){
+ if(localRecords(f&&f.id).some(r=>nid(r.idExpl)===nid(id)))return true;
+ const r=S.sample.find(x=>nid(x.id)===nid(id));return!!(r&&r.etat&&r.qid!==(f&&f.id));
+}
+const hasReserves=()=>S.sample.some(r=>r.liste==="R");
+function firstReserve(strate,classe,f,skip){
+ skip=skip||[];const me=nid(S.user&&S.user.code);
+ return S.sample.filter(r=>r.liste==="R"&&r.cmv===String(strate)&&r.classe===String(classe)&&(!r.enq||nid(r.enq)===me)&&!skip.includes(r.id)&&!usedReserve(r.id,f)).sort((x,y)=>x.ordre-y.ordre)[0]||null;
+}
+// Exploitations sans questionnaire complet et pas encore remplacées, avec la réserve à utiliser
+function toReplace(){
+ const recs=localRecords(null).filter(r=>r.src!=="brouillon"&&r.status!=="complet");
+ const seen=new Set(),skip=[],out=[];
+ recs.forEach(r=>{const k=nid(r.idExpl);if(!k||seen.has(k))return;seen.add(k);if(isReplaced(r.idExpl,null))return;
+  const res=firstReserve(r.strate,r.classe,null,skip);if(res)skip.push(res.id);out.push({rec:r,res})});
+ return out;
+}
+function chkIdExpl(){
+ const f=S.form;if(!f||!f.a.idExpl)return null;const id=f.a.idExpl;
+ if(Object.values(S.drafts).some(x=>x.id!==f.id&&nid(x.a.idExpl)===nid(id)))return"Un brouillon existe déjà pour cette exploitation : reprenez-le depuis l'accueil (Brouillons).";
+ const k=knownOutcome(id,f.id);
+ if(k)return`Exploitation déjà enquêtée (${STATUT_LBL[k.status]||k.status}${k.par?", par "+k.par:""}). Une exploitation ne peut avoir qu'un seul questionnaire.`;
+ return null;
+}
+function chkTitulaire(){
+ const f=S.form;if(!f||!hasReserves())return null;const r=S.sample.find(x=>nid(x.id)===nid(f.a.idExpl));if(!r)return null;
+ if(r.liste==="R"&&f.a.titulaire==="1")return"Cette exploitation fait partie de la réserve : elle ne s'enquête qu'en remplacement (cocher « Remplaçante »).";
+ if(r.liste==="T"&&f.a.titulaire==="2")return"Cette exploitation est titulaire : cocher « Titulaire ».";
+ return null;
+}
+function chkRemp(){
+ const f=S.form;if(!f)return null;const a=f.a;if(a.titulaire!=="2"||!a.idRemp)return null;
+ if(nid(a.idRemp)===nid(a.idExpl))return"Une exploitation ne peut pas se remplacer elle-même.";
+ if(!S.sample.length)return null;
+ const old=S.sample.find(x=>nid(x.id)===nid(a.idRemp));
+ if(!old)return"Identifiant remplacé absent de la liste tirée.";
+ if(old.cmv!==a.strate||old.classe!==a.classe)return`Remplacement interdit : ${old.id} est en strate ${old.cmv}, classe ${CLASSES[old.classe]||old.classe}. La remplaçante doit être de la même strate et de la même classe.`;
+ const k=knownOutcome(a.idRemp,f.id);
+ if(!k)return`Aucun résultat n'est enregistré pour ${old.id}. Finalisez d'abord son questionnaire (introuvable, refus ou exploitation inactive), puis revenez ici.`;
+ if(k.status==="complet")return`${old.id} a déjà un questionnaire complet : il n'y a rien à remplacer.`;
+ if(isReplaced(a.idRemp,f))return`${old.id} a déjà été remplacée par une autre exploitation.`;
+ if(hasReserves()){const first=firstReserve(a.strate,a.classe,f);
+  if(!first)return"Réserve épuisée pour cette strate et cette classe : appelez le superviseur.";
+  if(nid(first.id)!==nid(a.idExpl))return`La remplaçante doit être la première réserve disponible : ${first.id}${first.nom?" – "+first.nom:""}${first.douar?" – "+first.douar:""}. Pas de remplacement par commodité.`;}
+ return null;
+}
+function chkMotif(){
+ const f=S.form;if(!f)return null;const a=f.a;if(a.titulaire!=="2"||!a.idRemp||!a.motifRemp)return null;
+ const k=knownOutcome(a.idRemp,f.id);if(k&&MOTIF_OF[k.status]&&MOTIF_OF[k.status]!==a.motifRemp)return`Le motif doit correspondre au résultat enregistré pour ${a.idRemp} : ${STATUT_LBL[k.status]}.`;
+ return null;
+}
+
 /* ============================ VISIBILITÉ ET CONTRÔLES ============================ */
 function ctx(f){return Object.assign({},f.a,{_cult:f.cult||[]})}
-function stopped(f){const a=f.a;return a.consent==="2"||a.active==="2"}
+function stopped(f){return statusOf(f.a)!=="complet"}
 function modVisible(m,f){if(m.id!=="m0"&&stopped(f))return false;return m.rel?m.rel(ctx(f)):true}
 function qVisible(q,f){return q.rel?!!q.rel(ctx(f)):true}
 function opts(q,f){return typeof q.o==="function"?q.o(ctx(f)):q.o}
@@ -453,8 +535,8 @@ function renderQ(q,f){
  }else if(q.t==="textarea"){
   h+=`<label class="qt" for="in-${q.id}">${head}</label><textarea id="in-${q.id}" data-k="${q.id}">${esc(v||"")}</textarea>`;
  }else if(q.t==="sample"){
-  h+=`<label class="qt" for="in-${q.id}">${head}</label><input type="text" id="in-${q.id}" list="dl-sample" autocomplete="off" value="${esc(v||"")}" data-k="${q.id}" placeholder="ex. 806-2-014"><datalist id="dl-sample">${S.sample.slice(0,1500).map(r=>`<option value="${esc(r.id)}">${esc([r.nom,r.douar].filter(Boolean).join(" – "))}</option>`).join("")}</datalist>`;
-  const r=S.sample.find(x=>x.id===v);if(r)h+=`<div class="calc">Liste : strate ${esc(r.cmv)} · classe ${esc(CLASSES[r.classe]||r.classe)}${r.nom?" · "+esc(r.nom):""}${r.douar?" · "+esc(r.douar):""}</div>`;
+  h+=`<label class="qt" for="in-${q.id}">${head}</label><input type="text" id="in-${q.id}" list="dl-sample" autocomplete="off" value="${esc(v||"")}" data-k="${q.id}" placeholder="ex. 806-2-014"><datalist id="dl-sample">${S.sample.slice(0,1500).map(r=>`<option value="${esc(r.id)}">${esc([r.nom,r.douar,r.liste==="R"?"réserve":"",r.etat?"déjà enquêtée":""].filter(Boolean).join(" – "))}</option>`).join("")}</datalist>`;
+  const r=S.sample.find(x=>x.id===v);if(r)h+=`<div class="calc">Liste : strate ${esc(r.cmv)} · classe ${esc(CLASSES[r.classe]||r.classe)}${r.liste==="R"?" · réserve n° "+esc(r.ordre):""}${r.nom?" · "+esc(r.nom):""}${r.douar?" · "+esc(r.douar):""}</div>`;
   else if(v&&S.sample.length)h+=`<div class="hint">Identifiant absent de la liste tirée : vérifier, ou indiquer qu'il s'agit d'une remplaçante (0.5).</div>`;
  }else{
   const type=q.t==="tel"?"tel":q.t==="text"?"text":"number";
@@ -504,7 +586,7 @@ function renderForm(){
  if(m.custom)h+=renderCultures(f);else h+=m.qs.filter(q=>qVisible(q,f)).map(q=>renderQ(q,f)).join("");
  h+=`</div>`;
  if(m.id==="mC"){const v=volume(f.a);h+=`<div class="calc">Volume retenu : ${v.v!=null?fmt(v.v)+" m³":"—"} ${v.src?"("+esc(v.src)+")":""}</div>`}
- if(stopped(f))h+=`<div class="banner warn">Entretien arrêté (${f.a.consent==="2"?"refus":"exploitation inactive"}). Finalisez, puis passez à la remplaçante de la même strate.</div>`;
+ if(stopped(f))h+=`<div class="banner warn">Entretien arrêté (${esc(STATUT_LBL[statusOf(f.a)])}). Touchez « Finaliser » : la remplaçante vous sera proposée sur l'accueil.</div>`;
  h+=`</div>`;app.innerHTML=h;
  const last=pos===vm.length-1;
  document.getElementById("footerIn").innerHTML=`<button class="btn" data-act="prev" ${pos===0?"disabled":""}>Précédent</button>${last?`<button class="btn primary" data-act="finish">Finaliser</button>`:`<button class="btn primary" data-act="next">Suivant</button>`}`;
@@ -544,14 +626,18 @@ function renderHome(){
  if(S.note)h+=`<div class="banner bad">${esc(S.note)}</div>`;
  h+=`<div class="row"><div><div class="eyebrow">${esc(S.user.nom||S.user.code)} · ${esc(S.user.code)}</div><h1>Mes questionnaires</h1></div><span class="spacer"></span><button class="btn primary" data-act="new">Nouveau questionnaire</button></div>`;
  h+=`<div class="grid"><div class="panel kpi"><b class="mono">${S.mine.length}</b><span>reçus par le serveur</span></div><div class="panel kpi"><b class="mono">${S.outbox.length}</b><span>en attente d'envoi</span></div><div class="panel kpi"><b class="mono">${drafts.length}</b><span>brouillons</span></div><div class="panel kpi"><b class="mono">${S.sample.length}</b><span>exploitations dans la liste</span></div></div>`;
- if(S.outbox.length)h+=`<div class="banner warn row"><span>${S.outbox.length} questionnaire(s) finalisé(s) pas encore envoyé(s).</span><span class="spacer"></span><button class="btn small" data-act="sync" ${navigator.onLine?"":"disabled"}>Envoyer maintenant</button></div>`;
+ const blocked=S.outbox.filter(s=>s._err).length;
+ if(blocked)h+=`<div class="banner bad">${blocked} questionnaire(s) refusé(s) par le serveur (doublon) : voir la liste ci-dessous.</div>`;
+ if(S.outbox.length-blocked>0)h+=`<div class="banner warn row"><span>${S.outbox.length-blocked} questionnaire(s) finalisé(s) pas encore envoyé(s).</span><span class="spacer"></span><button class="btn small" data-act="sync" ${navigator.onLine?"":"disabled"}>Envoyer maintenant</button></div>`;
+ const rep=toReplace();
+ if(rep.length){h+=`<div class="panel"><h2>À remplacer (${rep.length})</h2><p class="hint">Règle de la note d'échantillonnage : même strate, même classe, première exploitation disponible de la réserve, dans l'ordre du tirage.</p>${rep.map(({rec,res})=>`<div class="list-item"><div class="l"><b class="mono">${esc(rec.idExpl)}</b><span class="muted">Strate ${esc(rec.strate)} · ${esc(CLASSES[rec.classe]||rec.classe)} · ${esc(STATUT_LBL[rec.status]||rec.status)}</span>${res?`<span>Remplaçante : <b class="mono">${esc(res.id)}</b>${res.nom?" – "+esc(res.nom):""}${res.douar?" – "+esc(res.douar):""}</span>`:hasReserves()?`<span class="err-msg">Réserve épuisée pour cette strate et cette classe : appelez le superviseur.</span>`:`<span class="err-msg">Liste de réserve non chargée : touchez « Actualiser » avec du réseau ou appelez le superviseur.</span>`}</div>${res?`<button class="btn small primary" data-repl="${esc(rec.idExpl)}" data-res="${esc(res.id)}">Commencer la remplaçante</button>`:""}</div>`).join("")}</div>`}
  if(drafts.length){h+=`<div class="panel"><h2>Brouillons</h2>${drafts.map(d=>`<div class="list-item"><div class="l"><b class="mono">${esc(d.a.idExpl||"sans identifiant")}</b><span class="muted">Modifié ${new Date(d.updatedAt).toLocaleString("fr-FR")}</span></div><div class="row"><button class="btn small" data-resume="${d.id}">Reprendre</button><button class="btn small danger" data-deldraft="${d.id}">Supprimer</button></div></div>`).join("")}</div>`}
- const pend=S.outbox.map(s=>({id:s.id,idExpl:s.a.idExpl,strate:s.a.strate,classe:s.a.classe,durMin:s.durMin,status:s.status,endedAt:s.endedAt,_pending:true}));
+ const pend=S.outbox.map(s=>({id:s.id,idExpl:s.a.idExpl,strate:s.a.strate,classe:s.a.classe,durMin:s.durMin,status:s.status,endedAt:s.endedAt,_pending:true,_err:s._err}));
  const sent=[...pend,...S.mine.filter(m=>!S.outbox.some(o=>o.id===m.id))].sort((x,y)=>(y.endedAt||0)-(x.endedAt||0));
  h+=`<div class="panel"><div class="row"><h2>Questionnaires finalisés</h2><span class="spacer"></span><button class="btn small" data-act="refresh" ${navigator.onLine?"":"disabled"}>${S.loading?"Actualisation…":"Actualiser"}</button></div>`;
  if(S.mineAt)h+=`<div class="hint">État du serveur au ${new Date(S.mineAt).toLocaleString("fr-FR")}</div>`;
  if(!sent.length)h+=`<p class="muted">Aucun questionnaire finalisé pour l'instant. Touchez « Nouveau questionnaire » pour commencer : l'identifiant de l'exploitation se choisit dans la liste tirée.</p>`;
- sent.forEach(s=>{const v=s.validation;h+=`<div class="list-item"><div class="l"><b class="mono">${esc(s.idExpl)}</b><span class="muted">Strate ${esc(s.strate)} · ${esc(CLASSES[s.classe]||"")} · ${s.durMin!=null?s.durMin+" min":""}${s.status!=="complet"?" · "+esc(s.status):""}</span>${v&&v.statut==="rejete"&&v.motif?`<span class="err-msg">Motif : ${esc(v.motif)}</span>`:""}</div><div class="row">${s._pending?`<span class="pill warn">En attente</span>`:statusPill(s)}${v&&v.statut==="rejete"?`<button class="btn small" data-fix="${s.id}">Corriger</button>`:""}</div></div>`});
+ sent.forEach(s=>{const v=s.validation;h+=`<div class="list-item"><div class="l"><b class="mono">${esc(s.idExpl)}</b><span class="muted">Strate ${esc(s.strate)} · ${esc(CLASSES[s.classe]||"")} · ${s.durMin!=null?s.durMin+" min":""}${s.status!=="complet"?" · "+esc(s.status):""}</span>${v&&v.statut==="rejete"&&v.motif?`<span class="err-msg">Motif : ${esc(v.motif)}</span>`:""}${s._err?`<span class="err-msg">${s._err.code==="doublon"?`Refusé par le serveur : exploitation déjà enquêtée${s._err.par?" par "+esc(s._err.par):""} (${esc(STATUT_LBL[s._err.statut]||s._err.statut)}).`:`Refusé par le serveur : l'exploitation remplacée l'a déjà été (par ${esc(s._err.par2||"une autre")}).`} Corrigez l'identifiant ou supprimez ce questionnaire.</span>`:""}</div><div class="row">${s._err?`<button class="btn small" data-unblock="${s.id}">Modifier</button><button class="btn small danger" data-delout="${s.id}">Supprimer</button>`:s._pending?`<span class="pill warn">En attente</span>`:statusPill(s)}${v&&v.statut==="rejete"?`<button class="btn small" data-fix="${s.id}">Corriger</button>`:""}</div></div>`});
  h+=`</div>`;
  h+=`<details class="panel"><summary><b>Mode d'emploi</b></summary><ol class="hint"><li>Installez l'application : menu du navigateur → « Ajouter à l'écran d'accueil ». Elle s'ouvre ensuite sans réseau.</li><li>Le matin, avec du réseau, touchez « Actualiser » pour charger la liste tirée et les retours du superviseur.</li><li>Un brouillon est enregistré sur le téléphone à chaque réponse.</li><li>« Finaliser » contrôle tout le questionnaire, puis l'envoie dès qu'il y a du réseau. Sinon il reste « en attente » ; il partira automatiquement au retour du réseau.</li><li>Un questionnaire rejeté par le superviseur réapparaît avec le motif et un bouton « Corriger » (réseau nécessaire).</li><li>Ne videz pas les données du navigateur tant que des questionnaires sont « en attente ».</li></ol></details>`;
  h+=`<div class="row"><span class="spacer"></span><button class="btn small ghost" data-act="logout">Se déconnecter</button></div>`;
@@ -576,6 +662,8 @@ function renderAdmin(){
   QUOTAS.forEach(q=>q.c.forEach((n,k)=>{const r=c[q.s+"-"+(k+1)]||0;h+=`<tr><td>${q.s} ${esc(q.n)}</td><td>${CLASSES[k+1]}</td><td class="num">${r}</td><td class="num">${n}</td><td><div class="bar"><i class="${r>=n?"full":""}" style="width:${Math.min(100,Math.round(100*r/n))}%"></i></div></td></tr>`}));
   const ip=Object.keys(c).filter(k=>k.startsWith("IP")).reduce((s,k)=>s+c[k],0);
   h+=`<tr><td>Irrigation privée</td><td>toutes</td><td class="num">${ip}</td><td class="num">${QUOTA_IP}</td><td><div class="bar"><i class="${ip>=QUOTA_IP?"full":""}" style="width:${Math.min(100,Math.round(100*ip/QUOTA_IP))}%"></i></div></td></tr></tbody></table></div>`;
+  const st={};subs.forEach(s=>{const k=s.strate||"?";const o=st[k]=st[k]||{c:0,ref:0,ina:0,intr:0,dbl:0,rem:0,n:0};o.n++;if(s.status==="complet")o.c++;if(s.status==="refus")o.ref++;if(s.status==="inactive")o.ina++;if(s.status==="introuvable")o.intr++;if(s.status==="doublon")o.dbl++;if(s.remplace)o.rem++});
+  h+=`<div class="panel"><h2>Non-réponse et remplacements</h2><p class="hint">À publier avec les résultats (note d'échantillonnage, section 6). Taux de non-réponse = (refus + inactives + introuvables + doublons) ÷ exploitations contactées.</p><div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>Strate</th><th class="num">Contactées</th><th class="num">Complets</th><th class="num">Refus</th><th class="num">Inactives</th><th class="num">Introuvables</th><th class="num">Doublons</th><th class="num">Remplaçantes</th><th class="num">Non-réponse</th></tr></thead><tbody>${Object.keys(st).sort().map(k=>{const o=st[k],nr=o.ref+o.ina+o.intr+o.dbl;return`<tr><td>${esc(k)}</td><td class="num">${o.n}</td><td class="num">${o.c}</td><td class="num">${o.ref}</td><td class="num">${o.ina}</td><td class="num">${o.intr}</td><td class="num">${o.dbl}</td><td class="num">${o.rem}</td><td class="num">${o.n?Math.round(100*nr/o.n)+" %":"—"}</td></tr>`}).join("")||`<tr><td colspan="9" class="muted">Aucune donnée.</td></tr>`}</tbody></table></div></div>`;
   const byEnq={};subs.forEach(s=>{const k=s.enq||"?";byEnq[k]=byEnq[k]||{n:0,c:0,d:[],r:0};byEnq[k].n++;if(s.status==="complet")byEnq[k].c++;if(s.status==="refus")byEnq[k].r++;if(s.durMin!=null)byEnq[k].d.push(s.durMin)});
   h+=`<div class="panel"><h2>Par enquêteur</h2><div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>Enquêteur</th><th class="num">Questionnaires</th><th class="num">Complets</th><th class="num">Refus</th><th class="num">Durée moyenne</th></tr></thead><tbody>${Object.entries(byEnq).map(([k,v])=>`<tr><td class="mono">${esc(k)}</td><td class="num">${v.n}</td><td class="num">${v.c}</td><td class="num">${v.r}</td><td class="num">${v.d.length?Math.round(v.d.reduce((a,b)=>a+b,0)/v.d.length)+" min":"—"}</td></tr>`).join("")||`<tr><td colspan="5" class="muted">Aucun questionnaire reçu pour l'instant.</td></tr>`}</tbody></table></div></div>`;
  }
@@ -628,7 +716,7 @@ function newForm(pref){
  S.mod=0;S.errors={};S.view="form";render();window.scrollTo(0,0);
 }
 function persistDraft(){if(!S.form)return;S.form.updatedAt=Date.now();S.drafts[S.form.id]=S.form;saveLocal()}
-function applySample(id){const r=S.sample.find(x=>x.id===id);if(!r)return;const a=S.form.a;a.strate=r.cmv;a.classe=r.classe;if(r.douar&&!a.douar)a.douar=r.douar}
+function applySample(id){const r=S.sample.find(x=>x.id===id);if(!r)return;const a=S.form.a;a.strate=r.cmv;a.classe=r.classe;if(r.douar&&!a.douar)a.douar=r.douar;if(hasReserves())a.titulaire=r.liste==="R"?"2":"1"}
 function goto(i){S.mod=i;S.errors={};render();window.scrollTo(0,0)}
 function step(dir){
  const f=S.form,vm=visibleMods(f),pos=vm.indexOf(S.mod);
@@ -640,9 +728,9 @@ function finish(){
  const f=S.form,vm=visibleMods(f);
  for(const i of vm){const e=modErrors(i,f);if(Object.keys(e).length){S.mod=i;S.errors=e;render();toast("Module "+MODULES[i].code+" incomplet");return}}
  const sub={id:f.id,a:f.a,cult:f.cult,nCult:f.nCult,hasAutres:f.hasAutres,autres:f.autres,startedAt:f.startedAt,endedAt:Date.now(),
-  durMin:Math.round((Date.now()-f.startedAt)/60000),status:f.a.consent==="2"?"refus":f.a.active==="2"?"inactive":"complet",formVersion:FORM_VERSION};
+  durMin:Math.round((Date.now()-f.startedAt)/60000),status:statusOf(f.a),formVersion:FORM_VERSION};
  S.outbox=S.outbox.filter(x=>x.id!==sub.id);S.outbox.push(sub);delete S.drafts[f.id];saveLocal();
- S.form=null;S.view="home";toast("Questionnaire finalisé");render();sync();
+ S.form=null;S.view="home";toast(sub.status==="complet"?"Questionnaire finalisé":"Résultat enregistré : la remplaçante est proposée sur l'accueil");render();sync();
 }
 function gps(){
  if(!navigator.geolocation){toast("Position indisponible sur ce téléphone");return}
@@ -668,6 +756,10 @@ document.addEventListener("click",async ev=>{
  if(d.act==="login")return; // géré par submit
  if(d.view){S.view=d.view;S.detail=null;S.detailSub=null;render();if(d.view==="admin")refresh(true);return}
  if(d.go){if(+d.go>S.mod){for(const i of visibleMods(S.form)){if(i>=+d.go)break;const e=modErrors(i,S.form);if(Object.keys(e).length){goto(i);S.errors=e;render();toast("Module "+MODULES[i].code+" incomplet");return}}}goto(+d.go);return}
+ if(d.repl){const rec=localRecords(null).find(r=>r.idExpl===d.repl&&r.src!=="brouillon");const res=S.sample.find(x=>x.id===d.res);if(!rec||!res)return;
+  newForm({id:uid(),a:{codeEnq:S.user.code,idExpl:res.id,strate:res.cmv,classe:res.classe,douar:res.douar||"",titulaire:"2",idRemp:rec.idExpl,motifRemp:MOTIF_OF[rec.status]||""},cult:[],nCult:null,hasAutres:null,autres:{},startedAt:Date.now(),updatedAt:Date.now()});persistDraft();return}
+ if(d.unblock){const s=S.outbox.find(x=>x.id===d.unblock);if(!s)return;S.outbox=S.outbox.filter(x=>x.id!==s.id);const f={id:s.id,a:s.a,cult:s.cult||[],nCult:s.nCult,hasAutres:s.hasAutres,autres:s.autres||{},startedAt:s.startedAt,updatedAt:Date.now()};S.drafts[s.id]=f;saveLocal();S.form=f;S.mod=0;S.errors={};S.view="form";render();return}
+ if(d.delout){if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Confirmer";setTimeout(()=>{if(b.isConnected){b.dataset.confirm="";b.textContent="Supprimer"}},3000);return}S.outbox=S.outbox.filter(x=>x.id!==d.delout);saveLocal();render();return}
  if(d.resume){S.form=S.drafts[d.resume];S.mod=0;S.errors={};S.view="form";render();return}
  if(d.deldraft){if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Confirmer";setTimeout(()=>{if(b.isConnected){b.dataset.confirm="";b.textContent="Supprimer"}},3000);return}delete S.drafts[d.deldraft];saveLocal();render();return}
  if(d.fix){if(!navigator.onLine){toast("Réseau nécessaire pour ouvrir la correction");return}
