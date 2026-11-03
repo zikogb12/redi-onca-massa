@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D6C78">
+<title>Collecte REDI Massa</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* Layout : application de terrain installable (PWA), une colonne lisible au téléphone ; barre supérieure fixe, un module par écran, tableau de bord en grilles pour le superviseur. */
+:root{
+  --bg:#F3F5F1; --surface:#FFFFFF; --sunk:#E9EDE7; --ink:#1C2521; --muted:#5A6660; --line:#D5DCD4;
+  --accent:#0D6C78; --accent-ink:#FFFFFF; --accent-soft:#DCEEF0; --ochre:#A9681F;
+  --ok:#2C7A4B; --ok-soft:#DDF0E3; --warn:#9A6512; --warn-soft:#F7EBD3; --bad:#AE3D2A; --bad-soft:#F6DFD9;
+  --f-display:"Arial Narrow","Roboto Condensed",Arial,sans-serif; --f-body:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; --f-mono:ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111614; --surface:#18201D; --sunk:#202A26; --ink:#E3EAE6; --muted:#98A49E; --line:#2D3833;
+  --accent:#4FB0BC; --accent-ink:#0B1A1C; --accent-soft:#16363A; --ochre:#D9A05B;
+  --ok:#5DBB86; --ok-soft:#173826; --warn:#E0B04F; --warn-soft:#3A2E14; --bad:#E5806B; --bad-soft:#3E1F18; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111614; --surface:#18201D; --sunk:#202A26; --ink:#E3EAE6; --muted:#98A49E; --line:#2D3833;
+  --accent:#4FB0BC; --accent-ink:#0B1A1C; --accent-soft:#16363A; --ochre:#D9A05B;
+  --ok:#5DBB86; --ok-soft:#173826; --warn:#E0B04F; --warn-soft:#3A2E14; --bad:#E5806B; --bad-soft:#3E1F18; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 96px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--f-display);font-stretch:80%;font-weight:800;font-size:19px;letter-spacing:.01em;display:flex;align-items:baseline;gap:8px}
+.brand small{font-family:var(--f-mono);font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.04em}
+.spacer{flex:1}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;font:600 14px var(--f-body);cursor:pointer}
+.tab[aria-current="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.net{font:500 11px var(--f-mono);padding:3px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.net.on{background:var(--ok-soft);color:var(--ok)} .net.off{background:var(--warn-soft);color:var(--warn)}
+h1,h2,h3{font-family:var(--f-display);font-stretch:85%;text-wrap:balance;margin:0}
+h1{font-size:28px;font-weight:800} h2{font-size:21px;font-weight:700} h3{font-size:16px;font-weight:700}
+.eyebrow{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.muted{color:var(--muted)} .mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 16px;border-radius:8px;font:600 15px var(--f-body);cursor:pointer;min-height:44px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent}
+.btn.small{padding:6px 10px;min-height:34px;font-size:13px}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.tab:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.chip:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.pill{display:inline-block;font:600 12px var(--f-body);padding:2px 9px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.acc{background:var(--accent-soft);color:var(--accent)}
+.banner{border-radius:8px;padding:10px 12px;font-size:14px;border:1px solid var(--line);background:var(--sunk)}
+.banner.warn{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
+.banner.ok{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
+.banner.bad{background:var(--bad-soft);border-color:transparent;color:var(--bad)}
+/* formulaire */
+.progress{height:6px;background:var(--sunk);border-radius:999px;overflow:hidden}
+.progress>i{display:block;height:100%;background:var(--accent);transition:width .25s}
+@media (prefers-reduced-motion:reduce){.progress>i{transition:none}}
+.modnav{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.modnav button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:500 12px var(--f-mono);border-radius:6px;padding:4px 8px;cursor:pointer}
+.modnav button[aria-current="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.modnav button.err{border-color:var(--bad);color:var(--bad)}
+.q{display:flex;flex-direction:column;gap:6px;padding-block:12px;border-top:1px solid var(--line)}
+.q:first-child{border-top:0}
+.q label.qt,.q .qt{font-weight:600}
+.code{font:500 12px var(--f-mono);color:var(--accent);margin-right:6px}
+.hint{font-size:13px;color:var(--muted)}
+.err-msg{font-size:13px;color:var(--bad);font-weight:600}
+input[type=text],input[type=number],input[type=tel],select,textarea{width:100%;font:16px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px}
+textarea{min-height:70px;resize:vertical}
+.q.invalid input,.q.invalid select{border-color:var(--bad)}
+.choices{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--surface);cursor:pointer;min-height:44px;font-size:15px}
+.chip input{width:18px;height:18px;accent-color:var(--accent);margin:0}
+.chip.on{border-color:var(--accent);background:var(--accent-soft)}
+.chip .k{font:500 12px var(--f-mono);color:var(--muted)}
+.inline{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.inline label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.card{border:1px solid var(--line);border-radius:var(--r);padding:14px;background:var(--surface)}
+.card+.card{margin-top:12px}
+.card h3{display:flex;gap:8px;align-items:center}
+.calc{font:500 13px var(--f-mono);background:var(--sunk);border-radius:6px;padding:8px 10px;color:var(--ink)}
+.footer-nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.footer-nav .in{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;display:flex;gap:10px;align-items:center}
+.footer-nav .in .btn{flex:1}
+/* tableaux */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font:600 12px var(--f-body);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;background:var(--sunk)}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.bar{height:8px;background:var(--sunk);border-radius:999px;overflow:hidden;min-width:80px}
+.bar>i{display:block;height:100%;background:var(--accent)}
+.bar>i.full{background:var(--ok)}
+.kpi{display:flex;flex-direction:column;gap:2px}
+.kpi b{font:700 30px var(--f-display);font-stretch:85%}
+.kpi span{font-size:13px;color:var(--muted)}
+.list-item{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--line)}
+.list-item:first-child{border-top:0}
+.list-item .l{min-width:0;display:flex;flex-direction:column;gap:2px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:8px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
+.detail dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 12px;margin:0}
+.detail dt{color:var(--muted);font-size:13px}
+.detail dd{margin:0;font-family:var(--f-mono);font-size:13px;word-break:break-word}
+@media (max-width:520px){h1{font-size:24px}.detail dl{grid-template-columns:1fr}.detail dd{margin-bottom:6px}}
+.gridq{display:grid;gap:8px}
+.gridq label{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:10px;align-items:center;font-size:15px}
+@media (max-width:520px){.gridq label{grid-template-columns:1fr;gap:4px}}
+form.panel input{min-height:44px}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <div class="brand">Collecte REDI Massa <small>situation de référence · V5</small></div>
+  <div class="spacer"></div>
+  <span id="net" class="net">…</span>
+  <nav class="tabs" id="tabs" aria-label="Vues"></nav>
+</div></header>
+<main class="wrap" id="app"></main>
+<div class="footer-nav" id="footer" hidden><div class="in" id="footerIn"></div></div>
+<div class="toast" id="toast" hidden></div>
+<script src="config.js"></script>
+<script>
+(function(){
+"use strict";
+const FORM_VERSION="V5";
+/* ============================ DONNÉES DE RÉFÉRENCE ============================ */
+const QUOTAS=[ // note d'échantillonnage : questionnaires complets par strate
+ {s:"805",n:"Belfaa",c:[21,13,4]},{s:"806",n:"Oukhrib",c:[26,15,10]},{s:"807",n:"Toussous",c:[25,12,6]},
+ {s:"808",n:"Tin Ait Brahim",c:[14,10,8]},{s:"809",n:"El Khmis",c:[23,13,8]}];
+const QUOTA_IP=159, QUOTA_TOTAL=367;
+const CLASSES={"1":"0 – 2 ha","2":"2 – 5 ha","3":"> 5 ha","9":"À établir"};
+const YN=[["1","Oui"],["2","Non"]];
+const CULTURES=[["tomate","Tomate"],["poivron","Poivron"],["haricot","Haricot vert"],["courgette","Courgette"],["concombre","Concombre"],["aubergine","Aubergine"],["melon","Melon / pastèque"],["fraise","Fraise"],["petits_fruits","Framboise / myrtille"],["banane","Banane"],["agrumes","Agrumes"],["olivier","Olivier"],["arbo_autre","Autre arboriculture"],["mais_f","Maïs fourrager"],["luzerne","Luzerne"],["fourrage_autre","Autre fourrage (bersim, orge…)"],["cereales","Céréales"],["pdt","Pomme de terre"],["oignon","Oignon"],["autre","Autre (préciser)"]];
+const FOURRAGES=["mais_f","luzerne","fourrage_autre"];
+const UNITES=[["kg","kg"],["t","tonne"],["q","quintal"],["caisse","caisse"]];
+
+/* ============================ QUESTIONNAIRE ============================ */
+// Types : one, multi, int, dec, text, tel, group (plusieurs nombres), note. rel(a) = filtre ; ex = codes exclusifs.
+const has=(v,c)=>Array.isArray(v)&&v.includes(c);
+const num=v=>(v===""||v==null||isNaN(+v))?null:+v;
+const MODULES=[
+{id:"m0",code:"0",title:"Identification et consentement",min:2,qs:[
+ {id:"idExpl",code:"0.1",t:"sample",l:"Identifiant de l'exploitation",h:"Choisir dans la liste tirée, ou saisir l'identifiant si la liste n'est pas chargée."},
+ {id:"strate",code:"0.2a",t:"one",l:"Strate",o:[["805","805 Belfaa"],["806","806 Oukhrib"],["807","807 Toussous"],["808","808 Tin Ait Brahim"],["809","809 El Khmis"],["IP","Irrigation privée"]]},
+ {id:"classe",code:"0.2b",t:"one",l:"Classe de superficie",o:[["1","0 – 2 ha"],["2","2 – 5 ha"],["3","> 5 ha"],["9","À établir (irrigation privée)"]]},
+ {id:"commune",code:"0.3a",t:"text",l:"Commune",req:false},
+ {id:"douar",code:"0.3b",t:"text",l:"Douar",req:false},
+ {id:"gps",code:"0.4",t:"group",l:"Coordonnées GPS (degrés décimaux)",h:"Toucher « Relever la position » devant l'exploitation (siège ou parcelle principale).",f:[["lat","Latitude",-90,90],["lon","Longitude",-180,180],["acc","Précision (m)",0,100000,false]],req:false,dec:true},
+ {id:"titulaire",code:"0.5",t:"one",l:"Exploitation titulaire ou remplaçante",o:[["1","Titulaire"],["2","Remplaçante"]]},
+ {id:"idRemp",code:"0.5b",t:"text",l:"Identifiant de l'exploitation remplacée",rel:a=>a.titulaire==="2"},
+ {id:"motifRemp",code:"0.5c",t:"one",l:"Motif du remplacement",o:[["1","Introuvable après 2 passages"],["2","Refus"],["3","Exploitation inactive"],["4","Doublon"]],rel:a=>a.titulaire==="2"},
+ {id:"codeEnq",code:"0.6",t:"text",l:"Code enquêteur",h:"Rempli avec le code de connexion."},
+ {id:"consent",code:"0.7",t:"one",l:"Lire en entier : « Nous réalisons, pour l'ONCA, une enquête sur les exploitations agricoles de la zone afin de mieux adapter le conseil agricole. L'entretien dure environ 40 minutes. Votre participation est volontaire : vous pouvez refuser de répondre à une question ou arrêter à tout moment, sans aucune conséquence sur les services ou aides dont vous bénéficiez. Vos réponses sont confidentielles et ne seront utilisées que de façon anonyme, à des fins statistiques (loi 09-08). Acceptez-vous de participer ? »",o:YN,stop:"2"},
+ {id:"motifRefus",code:"0.7b",t:"one",l:"Motif du refus",o:[["1","Manque de temps"],["2","Méfiance / crainte d'un contrôle"],["3","Pas intéressé"],["4","Autre"]],rel:a=>a.consent==="2"},
+ {id:"motifRefusP",code:"0.7c",t:"text",l:"Préciser le motif",rel:a=>a.consent==="2"&&a.motifRefus==="4"},
+ {id:"active",code:"0.8",t:"one",l:"L'exploitation a-t-elle été cultivée pendant la campagne 2025-2026 ?",o:YN,rel:a=>a.consent==="1",stop:"2"}
+]},
+{id:"mA",code:"A",title:"Exploitant et ménage",min:4,qs:[
+ {id:"A1",t:"one",l:"Le répondant est-il le chef d'exploitation ?",o:[["1","Oui"],["2","Non, gérant"],["3","Non, membre de la famille"]]},
+ {id:"A2",t:"one",l:"Sexe du chef d'exploitation",o:[["1","Homme"],["2","Femme"]]},
+ {id:"A3",t:"int",l:"Âge du chef d'exploitation",u:"ans",min:15,max:100},
+ {id:"A4",t:"one",l:"Niveau d'instruction",o:[["0","Aucun"],["1","Coranique / alphabétisation"],["2","Primaire"],["3","Secondaire"],["4","Supérieur"]]},
+ {id:"A5",t:"one",l:"L'agriculture est-elle votre activité principale ?",o:YN},
+ {id:"A6",t:"group",l:"Membres du ménage travaillant sur l'exploitation",f:[["tot","Total",0,40],["fem","dont femmes",0,40],["jeu","dont jeunes < 40 ans",0,40]],chk:a=>{const g=a.A6||{};if(num(g.fem)>num(g.tot)||num(g.jeu)>num(g.tot))return"Les femmes et les jeunes ne peuvent pas dépasser le total.";}},
+ {id:"A7",t:"one",l:"Téléphone utilisé",o:[["0","Aucun"],["1","Téléphone simple"],["2","Smartphone"]]},
+ {id:"A8",t:"one",l:"Utilisez-vous WhatsApp ?",o:YN,rel:a=>a.A7==="2"},
+ {id:"A9",t:"one",l:"Lisez-vous les SMS sans aide ?",o:[["1","Oui"],["2","Avec aide"],["3","Non"]],rel:a=>a.A7==="1"||a.A7==="2"},
+ {id:"A10",t:"grid",l:"Dans votre ménage, qui décide habituellement…",rows:[["cult","du choix des cultures"],["intr","de l'achat des intrants"],["vente","de la vente de la production"],["form","de la participation aux formations"]],o:[["1","Un homme du ménage"],["2","Une femme du ménage"],["3","Ensemble (homme et femme)"],["4","Autre personne (gérant, associé)"]]},
+ {id:"A11",t:"one",l:"Un membre du ménage vit-il avec un handicap ou une maladie de longue durée qui limite son activité ?",o:[["1","Oui"],["2","Non"],["9","Ne souhaite pas répondre"]]}
+]},
+{id:"mB",code:"B",title:"Structure de l'exploitation",min:3,qs:[
+ {id:"B1",t:"dec",l:"Superficie agricole totale exploitée",u:"ha",min:0,max:1000},
+ {id:"B2",t:"multi",l:"Mode de faire-valoir",o:[["1","Propriété"],["2","Location"],["3","Association"],["4","Indivision"],["5","Autre"]]},
+ {id:"B3",t:"dec",l:"Superficie irriguée",u:"ha",min:0,max:1000,chk:a=>num(a.B3)>num(a.B1)?"La superficie irriguée dépasse la superficie totale.":null},
+ {id:"B4",t:"dec",l:"dont superficie en goutte-à-goutte",u:"ha",min:0,max:1000,chk:a=>num(a.B4)>num(a.B3)?"Le goutte-à-goutte dépasse la superficie irriguée.":null},
+ {id:"B5",t:"group",l:"dont superficie en aspersion / gravitaire",f:[["asp","Aspersion (ha)",0,1000],["grav","Gravitaire (ha)",0,1000]],dec:true,chk:a=>{const s=(num(a.B4)||0)+(num((a.B5||{}).asp)||0)+(num((a.B5||{}).grav)||0);return s>(num(a.B3)||0)+0.01?"Goutte-à-goutte + aspersion + gravitaire dépassent la superficie irriguée.":null}},
+ {id:"B6",t:"dec",l:"Superficie sous serre",u:"ha",min:0,max:1000,chk:a=>num(a.B6)>num(a.B1)?"La serre dépasse la superficie totale.":null},
+ {id:"B7",t:"int",l:"Année d'installation du goutte-à-goutte",min:1980,max:2026,rel:a=>num(a.B4)>0},
+ {id:"B8",t:"one",l:"Le goutte-à-goutte a-t-il bénéficié d'une subvention du FDA ?",o:[["1","Oui"],["2","Non"],["3","Demande en cours"]],rel:a=>num(a.B4)>0},
+ {id:"B9",t:"one",l:"Pratiquez-vous l'élevage (bétail, volailles, ruches) ?",o:YN},
+ {id:"B9e",t:"one",l:"Espèce principale",o:[["1","Bovins laitiers"],["2","Autres bovins"],["3","Ovins"],["4","Caprins"],["5","Volailles"],["6","Apiculture"]],rel:a=>a.B9==="1"}
+]},
+{id:"mC",code:"C",title:"Eau d'irrigation",min:5,qs:[
+ {id:"C1",t:"multi",l:"Sources d'eau utilisées pendant la campagne",o:[["1","Puits / forage individuel"],["2","Puits collectif"],["3","Réseau collectif (ORMVASM)"],["4","Eau dessalée"],["5","Autre"]]},
+ {id:"C2",t:"one",l:"Source principale",o:a=>(a.C1||[]).map(c=>[c,MODULES[3].qs[0].o.find(x=>x[0]===c)[1]]),rel:a=>(a.C1||[]).length>1},
+ {id:"C3",t:"one",l:"Énergie de pompage",o:[["1","Électricité réseau"],["2","Solaire"],["3","Gaz butane"],["4","Gasoil"],["5","Sans pompage"]]},
+ {id:"C4c",code:"C4",t:"one",l:"Le volume d'eau de la campagne est-il connu par compteur ou factures ?",o:[["1","Oui, compteur"],["2","Oui, factures"],["3","Non"]]},
+ {id:"C4",code:"C4v",t:"dec",l:"Volume d'eau consommé sur la campagne",u:"m³",min:0,max:5000000,rel:a=>a.C4c==="1"||a.C4c==="2"},
+ {id:"C5c",code:"C5",t:"one",l:"Connaissez-vous le débit de la pompe et les heures de pompage ?",o:YN,rel:a=>a.C4c==="3"},
+ {id:"C5",code:"C5v",t:"group",l:"Débit × heures par jour × jours d'irrigation",f:[["debit","Débit (m³/h)",0,500],["h","Heures / jour",0,24],["j","Jours sur la campagne",0,366]],dec:true,rel:a=>a.C4c==="3"&&a.C5c==="1"},
+ {id:"C6",t:"dec",l:"Estimation du volume par l'exploitant",u:"m³",min:0,max:5000000,nsp:true,h:"Cocher « Ne sait pas » si aucune estimation n'est possible.",rel:a=>a.C4c==="3"&&a.C5c==="2"},
+ {id:"C6b",t:"group",l:"Repère de secours",f:[["hs","Heures d'irrigation / semaine en pointe",0,168],["mois","Mois d'irrigation",0,12],["cv","Puissance pompe (CV)",0,500]],dec:true,req:false,rel:a=>a.C4c==="3"&&a.C5c==="2"&&a.C6==="NSP"},
+ {id:"C7",t:"dec",l:"Coût total de l'eau et de l'énergie d'irrigation sur la campagne",u:"DH",min:0,max:10000000},
+ {id:"C8",t:"multi",l:"Comment décidez-vous quand et combien irriguer ?",o:[["1","Habitude"],["2","Observation du sol / de la plante"],["3","Tensiomètre / sonde"],["4","Calcul selon l'ETP / météo"],["5","Conseil d'un technicien"],["6","Alerte reçue (SMS, application)"],["7","Tour d'eau imposé"]]},
+ {id:"C9",t:"one",l:"Pratiquez-vous la fertigation ?",o:[["1","Oui, selon un programme"],["2","Oui, sans programme"],["3","Non"]],rel:a=>num(a.B4)>0},
+ {id:"C10",t:"multi",l:"Au cours des 3 dernières campagnes, avez-vous constaté…",o:[["1","Baisse du niveau du puits"],["2","Eau plus salée"],["3","Coupures ou restrictions d'eau"],["4","Aucun changement"]],ex:["4"],rel:a=>has(a.C1,"1")||has(a.C1,"2")},
+ {id:"C11",t:"grid",l:"Êtes-vous satisfait de l'eau d'irrigation dont vous disposez ?",rows:[["qte","En quantité"],["qual","En qualité"]],o:[["1","Très satisfait"],["2","Satisfait"],["3","Peu satisfait"],["4","Pas satisfait"]]}
+]},
+{id:"mD",code:"D–E",title:"Cultures, production et charges",min:17,custom:"cultures"},
+{id:"mL",code:"L",title:"Élevage",min:2,rel:a=>a.B9==="1",qs:[
+ {id:"L1",t:"group",l:"Effectifs actuels",f:[["vl","Vaches laitières",0,2000],["gen","Génisses et veaux",0,2000],["bov","Autres bovins",0,2000],["ov","Ovins",0,5000],["cap","Caprins",0,5000],["vol","Volailles",0,1000000],["ruc","Ruches",0,10000]]},
+ {id:"L2",t:"group",l:"Production de lait du troupeau",f:[["lj","Litres / jour en moyenne",0,20000],["mois","Mois de traite",0,12]],dec:true,rel:a=>num((a.L1||{}).vl)>0},
+ {id:"L3",t:"group",l:"Lait vendu",f:[["lj","Litres / jour",0,20000],["prix","Prix (DH / litre)",0,50]],dec:true,rel:a=>num((a.L2||{}).lj)>0,chk:a=>num((a.L3||{}).lj)>num((a.L2||{}).lj)?"Le lait vendu dépasse le lait produit.":null},
+ {id:"L3c",code:"L3b",t:"one",l:"Circuit principal du lait",o:[["1","Centre de collecte / coopérative"],["2","Colporteur"],["3","Vente directe"],["4","Transformation à la ferme"]],rel:a=>num((a.L3||{}).lj)>0},
+ {id:"L4",t:"group",l:"Ventes de l'élevage sur la campagne (hors lait)",f:[["nb","Animaux vendus (nombre)",0,1000000],["val","Valeur des animaux vendus (DH)",0,100000000],["aut","Autres produits : œufs, miel, laine (DH)",0,100000000]]},
+ {id:"L5",t:"group",l:"Charges de l'élevage sur la campagne (DH)",f:[["alim","Aliments achetés",0,100000000],["vet","Vétérinaire et insémination",0,100000000],["mo","Main-d'œuvre salariée élevage",0,100000000]]},
+ {id:"L6",t:"multi",l:"Pratiques appliquées",o:[["1","Insémination artificielle"],["2","Ensilage"],["3","Vaccination régulière"],["4","Rationnement calculé"],["5","Abreuvement / logement amélioré"],["0","Aucune"]],ex:["0"]},
+ {id:"L7",t:"int",l:"Part des cultures fourragères consommée par le troupeau",u:"%",min:0,max:100,rel:a=>(a._cult||[]).some(c=>FOURRAGES.includes(c.D1))}
+]},
+{id:"mF",code:"F",title:"Pratiques agricoles",min:4,h:"Cocher Oui seulement si la pratique est appliquée sur l'exploitation pendant la campagne 2025-2026.",qs:[
+ {id:"F1",t:"one",l:"Analyse de sol au cours des 3 dernières années",o:YN,dom:"D1"},
+ {id:"F2",t:"one",l:"Paillage, apport de fumier ou de compost",o:YN,dom:"D1"},
+ {id:"F3",t:"one",l:"Analyse de l'eau d'irrigation au cours des 3 dernières années",o:YN,dom:"D2"},
+ {id:"F5",t:"one",l:"Rotation ou alternance des cultures sur une même parcelle",o:YN,dom:"D3"},
+ {id:"F6",t:"one",l:"Variétés ou porte-greffes tolérants (sel, chaleur, maladies)",o:YN,dom:"D4"},
+ {id:"F7",t:"one",l:"Équipement ou outil nouveau adopté depuis 2 ans (sonde, vanne programmable, application…)",o:YN,dom:"D5"},
+ {id:"F9",t:"one",l:"Lutte intégrée : pièges, auxiliaires, traitement au seuil d'infestation",o:YN,dom:"D6"},
+ {id:"F10",t:"one",l:"Respect des doses et délais avant récolte indiqués sur l'étiquette",o:YN,dom:"D6"},
+ {id:"F11",t:"one",l:"Tenue d'un registre ou d'un cahier des dépenses et des traitements",o:YN,dom:"D7"}
+]},
+{id:"mG",code:"G",title:"Conseil, information et avertissement",min:3,qs:[
+ {id:"G1",t:"multi",l:"Au cours des 12 derniers mois, avez-vous reçu des conseils techniques ? De qui ?",o:[["0","Aucun"],["1","ONCA / CCA"],["2","ORMVASM"],["3","Fournisseur d'intrants"],["4","Station / exportateur"],["5","Coopérative / association"],["6","Autre agriculteur"],["7","Internet / réseaux sociaux"]],ex:["0"]},
+ {id:"G2",t:"one",l:"Êtes-vous satisfait des conseils reçus ?",o:[["1","Très satisfait"],["2","Satisfait"],["3","Peu satisfait"],["4","Pas satisfait"]],rel:a=>(a.G1||[]).length>0&&!has(a.G1,"0")},
+ {id:"G3",t:"one",l:"Recevez-vous des informations ou alertes (météo, irrigation, maladies) ?",o:[["1","Oui, régulièrement"],["2","Oui, parfois"],["3","Non"]]},
+ {id:"G4",t:"multi",l:"Par quel moyen ?",o:[["1","SMS"],["2","WhatsApp écrit"],["3","WhatsApp vocal"],["4","Appel"],["5","Application"],["6","Réunion"],["7","Radio / télévision"]],rel:a=>a.G3==="1"||a.G3==="2"},
+ {id:"G5",t:"one",l:"La dernière fois, avez-vous modifié votre irrigation ou un traitement après une alerte ?",o:YN,rel:a=>a.G3==="1"||a.G3==="2"},
+ {id:"G6",t:"one",l:"Pour recevoir des alertes à l'avenir, quel moyen préférez-vous ?",o:[["1","SMS"],["2","WhatsApp écrit"],["3","WhatsApp vocal"],["4","Appel"],["5","Application"],["6","Réunion"],["7","Radio / télévision"]]},
+ {id:"G7",t:"rank",l:"Les 3 sujets sur lesquels vous souhaitez être formé ou conseillé, par ordre de priorité",n:3,o:[["1","Pilotage de l'irrigation"],["2","Fertigation"],["3","Maladies et ravageurs"],["4","Économie d'eau / nappe"],["5","Eau dessalée"],["6","Choix variétal"],["7","Conduite sous serre"],["8","Élevage"],["9","Gestion et comptabilité"],["10","Commercialisation / agrégation"],["11","Transformation / valorisation"],["12","Autre"]]},
+ {id:"G8",t:"one",l:"Participeriez-vous à des activités du projet (journées, formations, écoles aux champs) ?",o:YN},
+ {id:"G8m",code:"G8b",t:"one",l:"Moment le plus favorable",o:[["1","Matin"],["2","Après-midi"],["3","Indifférent"]],rel:a=>a.G8==="1"}
+]},
+{id:"mH",code:"H",title:"Organisation et agrégation",min:1,qs:[
+ {id:"H1",t:"multi",l:"Êtes-vous membre de…",o:[["0","Aucune organisation"],["1","AUEA"],["2","Coopérative"],["3","Association professionnelle"]],ex:["0"]},
+ {id:"H2",t:"one",l:"Êtes-vous engagé dans un projet d'agrégation ou un contrat de vente en cours ?",o:YN},
+ {id:"H3",t:"one",l:"Filière concernée",o:CULTURES,rel:a=>a.H2==="1"},
+ {id:"H3a",code:"H3b",t:"text",l:"Agrégateur",req:false,rel:a=>a.H2==="1"}
+]},
+{id:"mI",code:"I",title:"Climat et adaptation",min:2,qs:[
+ {id:"I1",t:"multi",l:"Au cours des 3 dernières campagnes, quels événements ont réduit votre production ?",o:[["0","Aucun"],["1","Manque d'eau"],["2","Forte chaleur"],["3","Froid / gel"],["4","Vent / tempête"],["5","Inondation / grêle"],["6","Maladie ou ravageur grave"]],ex:["0"]},
+ {id:"I1b",t:"one",l:"Quel a été l'événement le plus grave ?",o:a=>(a.I1||[]).filter(c=>c!=="0").map(c=>[c,MODULES[9].qs[0].o.find(x=>x[0]===c)[1]]),rel:a=>(a.I1||[]).some(c=>c!=="0")},
+ {id:"I1c",code:"I1b-2",t:"one",l:"Au cours de quelle campagne ?",o:[["2324","2023-2024"],["2425","2024-2025"],["2526","2025-2026"]],rel:a=>(a.I1||[]).some(c=>c!=="0")},
+ {id:"I1d",code:"I1b-3",t:"int",l:"Part de la production de la culture principale perdue lors de cet événement",u:"%",min:0,max:100,rel:a=>(a.I1||[]).some(c=>c!=="0")},
+ {id:"I2",t:"multi",l:"Pour faire face au manque d'eau ou au climat, qu'avez-vous changé ?",o:[["0","Rien"],["1","Calendrier de plantation"],["2","Culture moins exigeante en eau"],["3","Réduction de superficie"],["4","Passage au goutte-à-goutte"],["5","Paillage / serre"],["6","Nouvelle source d'eau"]],ex:["0"]}
+]},
+{id:"mJ",code:"J",title:"Travail et environnement",min:3,h:"Ton neutre : il ne s'agit pas d'un contrôle.",qs:[
+ {id:"J1",t:"group",l:"Salariés permanents",f:[["tot","Nombre",0,1000],["fem","dont femmes",0,1000]],chk:a=>num((a.J1||{}).fem)>num((a.J1||{}).tot)?"Les femmes dépassent le total.":null},
+ {id:"J2",t:"group",l:"Saisonniers : journées de travail sur la campagne",f:[["tot","Journées",0,1000000],["fem","dont femmes",0,1000000]],chk:a=>num((a.J2||{}).fem)>num((a.J2||{}).tot)?"Les journées des femmes dépassent le total.":null},
+ {id:"J2b",t:"group",l:"Salaire journalier habituel d'un saisonnier (DH / jour)",f:[["hom","Homme",0,2000,false],["fem","Femme",0,2000,false]],req:true,rel:a=>num((a.J2||{}).tot)>0,chk:a=>{const g=a.J2b||{};if(emptyVal(g.hom)&&emptyVal(g.fem))return"Indiquer au moins un salaire.";if(num((a.J2||{}).fem)>0&&emptyVal(g.fem))return"Des femmes travaillent comme saisonnières : indiquer leur salaire.";return null}},
+ {id:"J3",t:"one",l:"Qui réalise les traitements phytosanitaires ?",o:[["1","Exploitant / famille"],["2","Salarié"],["3","Prestataire"],["4","Pas de traitement"]]},
+ {id:"J4",t:"multi",l:"Équipement porté pendant les traitements",o:[["0","Aucun"],["1","Masque"],["2","Gants"],["3","Combinaison"],["4","Lunettes"]],ex:["0"],rel:a=>a.J3&&a.J3!=="4"},
+ {id:"J5",t:"one",l:"Où sont stockés les produits phytosanitaires ?",o:[["1","Local fermé réservé"],["2","Dans la maison"],["3","À l'air libre"],["4","Pas de stock"]]},
+ {id:"J6",t:"one",l:"Que faites-vous des emballages vides ?",o:[["1","Collectés / rendus au fournisseur"],["2","Brûlés"],["3","Enfouis"],["4","Jetés"],["5","Réutilisés"]]},
+ {id:"J7",t:"one",l:"Que faites-vous des plastiques usagés (serre, paillage, goutteurs) ?",o:[["1","Collectés / rendus au fournisseur"],["2","Brûlés"],["3","Enfouis"],["4","Jetés"],["5","Réutilisés"]]},
+ {id:"J8",t:"one",l:"Des personnes de moins de 18 ans travaillent-elles sur l'exploitation contre rémunération ?",o:[["1","Oui"],["2","Non"],["9","Ne souhaite pas répondre"]]},
+ {id:"J9",t:"one",l:"Un accident lié au travail agricole est-il survenu au cours des 12 derniers mois ?",o:YN}
+]},
+{id:"mK",code:"K",title:"Financement et clôture",min:1,qs:[
+ {id:"K1",t:"multi",l:"Au cours des 3 dernières années, avez-vous obtenu ou souscrit…",o:[["0","Rien"],["1","Crédit bancaire ou de microfinance"],["2","Subvention FDA (hors goutte-à-goutte)"],["3","Autre aide publique"],["4","Assurance agricole (multirisque climatique)"]],ex:["0"]},
+ {id:"K2",t:"one",l:"Acceptez-vous d'être recontacté chaque année pour cette enquête ?",o:YN},
+ {id:"K3",t:"tel",l:"Téléphone de contact",rel:a=>a.K2==="1"},
+ {id:"K4",t:"one",l:"Observation de l'enquêteur : fiabilité des réponses",o:[["1","Fiable"],["2","Moyennement fiable"],["3","Peu fiable"]]},
+ {id:"K4t",code:"K4b",t:"textarea",l:"Remarques de l'enquêteur",req:false}
+]}
+];
+const CULT_FIELDS=[
+ ["D1","Culture","one",CULTURES],["D1p","Préciser la culture","text"],["D2","Mode","one",[["1","Serre"],["2","Plein champ"]]],["D3","Superficie (ha)","dec",0,1000],["D4","Nombre de cycles","int",1,4],
+ ["D5","Production totale","dec",0,10000000],["unit","Unité","one",UNITES],["kgc","kg par caisse","dec",1,100],["D6","Quantité vendue","dec",0,10000000],["D7","Prix moyen de vente à la ferme (DH / unité)","dec",0,100000],
+ ["D8","Circuit principal","one",[["1","Vente sur pied"],["2","Station de conditionnement"],["3","Intermédiaire (après récolte)"],["4","Marché de gros"],["5","Coopérative / agrégateur"],["6","Autoconsommation"]]],["D9","Rendement en année normale (même unité, par ha)","dec",0,10000000],
+ ["E1","Semences et plants (DH)","dec",0,1e8],["E2","Engrais, y compris fertigation (DH)","dec",0,1e8],["E3","Produits phytosanitaires (DH)","dec",0,1e8],["E4","Main-d'œuvre salariée (journées)","dec",0,1e6],["E5","Main-d'œuvre salariée (DH)","dec",0,1e8],["E6","Main-d'œuvre familiale (journées)","dec",0,1e6],["E7","Services et location de matériel (DH)","dec",0,1e8],["E8","Emballages et autres fournitures (DH)","dec",0,1e8]
+];
+
+/* ============================ ÉTAT ============================ */
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const CFG=window.REDI_CONFIG||{};
+const S={view:"home",user:LS.get("redi_user",null),api:(CFG.API_URL||"").trim()||LS.get("redi_api",""),
+ sample:LS.get("redi_sample",[]),sampleAt:LS.get("redi_sampleAt",null),mine:LS.get("redi_mine",[]),mineAt:LS.get("redi_mineAt",null),all:[],
+ outbox:LS.get("redi_outbox",[]),drafts:LS.get("redi_drafts",{}),form:null,mod:0,errors:{},adminTab:"avancement",detail:null,detailSub:null,filter:"",note:"",loading:false};
+const app=document.getElementById("app");
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2800)}
+function saveLocal(){LS.set("redi_outbox",S.outbox);LS.set("redi_drafts",S.drafts)}
+const isSup=()=>S.user&&S.user.role==="superviseur";
+const ERR={auth:"Code ou PIN incorrect, ou compte désactivé.",droits:"Action réservée au superviseur.",introuvable:"Questionnaire introuvable sur le serveur.",donnees:"Données refusées par le serveur.",serveur:"Erreur du serveur Google.",no_api:"Adresse du serveur non configurée.",reseau:"Pas de réponse du serveur (réseau ?).",action:"Action inconnue."};
+
+/* ============================ SERVEUR (Google Apps Script) ============================ */
+async function api(action,p={},cred){
+ if(!S.api)throw{code:"no_api"};
+ const c=cred||S.user||{};
+ const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),30000);
+ let r;
+ try{r=await fetch(S.api,{method:"POST",body:JSON.stringify(Object.assign({action,code:c.code,pin:c.pin},p)),signal:ctrl.signal,redirect:"follow"})}
+ catch(e){throw{code:"reseau"}}finally{clearTimeout(t)}
+ let j;try{j=await r.json()}catch(e){throw{code:"serveur"}}
+ if(!j.ok)throw{code:j.err||"serveur",msg:j.msg};
+ return j;
+}
+async function refresh(quiet){
+ if(!S.user||!navigator.onLine||!S.api)return;
+ S.loading=true;if(!quiet)render();
+ try{
+  const [e,m]=await Promise.all([api("echantillon"),api("mine")]);
+  S.sample=e.rows;S.sampleAt=Date.now();LS.set("redi_sample",S.sample);LS.set("redi_sampleAt",S.sampleAt);
+  S.mine=m.items;S.mineAt=Date.now();LS.set("redi_mine",S.mine);LS.set("redi_mineAt",S.mineAt);
+  if(isSup()){const s=await api("summary");S.all=s.items}
+  S.note="";
+ }catch(err){if(err.code==="auth"){logout(true);return}S.note=ERR[err.code]||"Actualisation impossible."}
+ S.loading=false;render();
+}
+let syncing=false;
+async function sync(){
+ if(syncing||!S.user||!S.outbox.length||!navigator.onLine||!S.api)return;syncing=true;
+ const queue=[...S.outbox];let sent=0;
+ for(const s of queue){
+  try{const fl=flatten(s);await api("submit",{sub:s,row:fl.main,cult:fl.cult});S.outbox=S.outbox.filter(x=>x.id!==s.id);saveLocal();sent++}
+  catch(e){S.note="Envoi interrompu : "+(ERR[e.code]||e.code)+" Les questionnaires restent sur ce téléphone.";break}
+ }
+ syncing=false;if(sent){toast(sent+" questionnaire(s) envoyé(s)");await refresh(true)}else render();
+}
+function logout(expired){S.user=null;LS.del("redi_user");S.mine=[];S.all=[];LS.del("redi_mine");if(expired)S.note="Votre code n'est plus accepté : reconnectez-vous.";S.view="home";render()}
+
+/* ============================ CALCULS ============================ */
+function kgFactor(c){return c.unit==="t"?1000:c.unit==="q"?100:c.unit==="caisse"?(num(c.kgc)||null):1}
+function volume(a){
+ if((a.C4c==="1"||a.C4c==="2")&&num(a.C4)!=null)return{v:num(a.C4),src:a.C4c==="1"?"compteur":"factures"};
+ const c5=a.C5||{};if(a.C5c==="1"&&num(c5.debit)!=null&&num(c5.h)!=null&&num(c5.j)!=null)return{v:num(c5.debit)*num(c5.h)*num(c5.j),src:"débit × heures × jours"};
+ if(a.C6!=null&&a.C6!=="NSP"&&num(a.C6)!=null)return{v:num(a.C6),src:"estimation exploitant"};
+ if(a.C6==="NSP")return{v:null,src:"repère de secours (C6b) à estimer"};
+ return{v:null,src:""};
+}
+function derive(f){
+ const a=f.a,cs=f.cult||[],ot=f.autres||{};
+ let valProd=0,okVal=true,charges=0,moSal=0;
+ cs.forEach(c=>{const q=num(c.D5),p=num(c.D7);if(q!=null&&p!=null)valProd+=q*p;else okVal=false;
+   ["E1","E2","E3","E7","E8"].forEach(k=>charges+=num(c[k])||0);moSal+=num(c.E5)||0});
+ valProd+=num(ot.val)||0;charges+=(num(ot.E9)||0)-(num(ot.E10)||0);moSal+=num(ot.E10)||0;
+ const vol=volume(a),va=valProd-((num(a.C7)||0)+charges);
+ const supSerre=cs.filter(c=>c.D2==="1").reduce((s,c)=>s+(num(c.D3)||0),0),supPC=cs.filter(c=>c.D2==="2").reduce((s,c)=>s+(num(c.D3)||0),0);
+ const mode=supSerre+supPC===0?"sans culture relevée":supSerre/(supSerre+supPC)>.5?"serre dominante":supPC/(supSerre+supPC)>.5?"plein champ dominant":"mixte";
+ return{vol:vol.v,volSrc:vol.src,valProd:okVal?valProd:null,va:okVal?va:null,marge:okVal?va-moSal:null,prodEau:okVal&&vol.v?va/vol.v:null,
+  consoHa:vol.v&&num(a.B3)?vol.v/num(a.B3):null,mode,F4:has(a.C8,"3")||has(a.C8,"4")?"1":"2",F8:a.C9==="1"?"1":"2",
+  F12:(cs.some(c=>c.D8==="5")||a.H2==="1")?"1":"2"};
+}
+// Tables à plat pour le classeur : une ligne par exploitation, une ligne par culture
+const cod=v=>typeof v==="string"&&/^\d{1,6}$/.test(v)?Number(v):(v??""); // codes de réponse en nombres
+function flatten(s){
+ const d=derive(s);
+ const r={id_questionnaire:s.id,id_exploitation:s.a.idExpl,strate:cod(s.a.strate),classe:cod(s.a.classe),statut:s.status,enqueteur:s.a.codeEnq||"",debut:new Date(s.startedAt).toISOString(),fin:new Date(s.endedAt).toISOString(),duree_min:s.durMin,version:s.formVersion};
+ MODULES.forEach(m=>(m.qs||[]).forEach(q=>{const x=s.a[q.id];
+  if(q.id==="idExpl"||q.id==="strate"||q.id==="classe")return;
+  if(q.t==="group")q.f.forEach(([k])=>r[`${q.id}_${k}`]=num((x||{})[k]));
+  else if(q.t==="grid")q.rows.forEach(([k])=>r[`${q.id}_${k}`]=cod((x||{})[k]));
+  else if(q.t==="multi"){r[q.id]=(x||[]).join(" ");const o=Array.isArray(q.o)?q.o:MODULES[3].qs[0].o;o.forEach(([c])=>r[`${q.id}_${c}`]=x?(x.includes(c)?1:0):null)}
+  else if(q.t==="rank")for(let k=0;k<q.n;k++)r[`${q.id}_${k+1}`]=cod((x||[])[k]);
+  else if(q.t==="int"||q.t==="dec")r[q.id]=x==="NSP"?9:num(x);
+  else if(q.t==="one")r[q.id]=cod(x);
+  else r[q.id]=x??""}));
+ r.nb_cultures=s.nCult;r.autres_cultures=cod(s.hasAutres);r.autres_sup=num((s.autres||{}).sup);r.autres_valeur=num((s.autres||{}).val);r.autres_E9=num((s.autres||{}).E9);r.autres_E10=num((s.autres||{}).E10);
+ Object.assign(r,{calc_volume_m3:d.vol,calc_source_volume:d.volSrc,calc_valeur_production:d.valProd,calc_valeur_ajoutee:d.va,calc_marge_brute:d.marge,calc_productivite_eau_DH_m3:d.prodEau,calc_conso_m3_ha:d.consoHa,calc_mode_production:d.mode,F4:cod(d.F4),F8:cod(d.F8),F12:cod(d.F12)});
+ const cult=(s.cult||[]).map((c,i)=>{const kf=kgFactor(c);const row={id_questionnaire:s.id,id_exploitation:s.a.idExpl,strate:cod(s.a.strate),classe:cod(s.a.classe),rang:i+1};
+  CULT_FIELDS.forEach(([k,,t])=>row[k]=t==="dec"||t==="int"?num(c[k]):t==="one"?cod(c[k]):(c[k]||""));
+  const q=num(c.D5),sup=num(c.D3);row.calc_production_kg=q!=null&&kf?q*kf:null;row.calc_rendement_t_ha=q!=null&&kf&&sup?q*kf/1000/sup:null;row.calc_produit_brut_DH=q!=null&&num(c.D7)!=null?q*num(c.D7):null;
+  row.calc_charges_hors_eau_DH_ha=sup?(["E1","E2","E3","E5","E7","E8"].reduce((t,k)=>t+(num(c[k])||0),0))/sup:null;row.calc_journees_ha=sup?((num(c.E4)||0)+(num(c.E6)||0))/sup:null;return row});
+ return{main:r,cult};
+}
+function dictRows(){
+ const dict=[];MODULES.forEach(m=>(m.qs||[]).forEach(q=>{const o=Array.isArray(q.o)?q.o:null;
+  if(q.t==="grid")q.rows.forEach(([k,l])=>q.o.forEach(([c,ll])=>dict.push({question:q.code||q.id,variable:`${q.id}_${k}`,libelle_question:q.l+" – "+l,code:c,libelle:ll})));
+  else if(q.t==="group")q.f.forEach(([k,l])=>dict.push({question:q.code||q.id,variable:`${q.id}_${k}`,libelle_question:q.l+" – "+l,code:"",libelle:""}));
+  else if(o)o.forEach(([c,l])=>dict.push({question:q.code||q.id,variable:q.id,libelle_question:q.l,code:c,libelle:l}));
+  else dict.push({question:q.code||q.id,variable:q.id,libelle_question:q.l,code:"",libelle:q.u||""})}));
+ CULT_FIELDS.forEach(([k,l,t,o])=>{if(t==="one")o.forEach(([c,ll])=>dict.push({question:k,variable:k,libelle_question:l,code:c,libelle:ll}));else dict.push({question:k,variable:k,libelle_question:l,code:"",libelle:""})});
+ return dict;
+}
+
+/* ============================ VISIBILITÉ ET CONTRÔLES ============================ */
+function ctx(f){return Object.assign({},f.a,{_cult:f.cult||[]})}
+function stopped(f){const a=f.a;return a.consent==="2"||a.active==="2"}
+function modVisible(m,f){if(m.id!=="m0"&&stopped(f))return false;return m.rel?m.rel(ctx(f)):true}
+function qVisible(q,f){return q.rel?!!q.rel(ctx(f)):true}
+function opts(q,f){return typeof q.o==="function"?q.o(ctx(f)):q.o}
+function emptyVal(v){return v==null||v===""||(Array.isArray(v)&&v.length===0)}
+function checkQ(q,f){
+ const a=f.a,v=a[q.id];if(!qVisible(q,f))return null;
+ const req=q.req!==false&&q.t!=="note";
+ if(q.t==="group"){const g=v||{};if(req&&q.f.some(x=>x[4]!==false&&emptyVal(g[x[0]])))return"Compléter tous les champs (0 si aucun).";
+   for(const x of q.f){const n=num(g[x[0]]);if(!emptyVal(g[x[0]])&&(n==null||n<x[2]||n>x[3]))return`${x[1]} : valeur entre ${x[2]} et ${x[3]}.`;if(!q.dec&&n!=null&&!Number.isInteger(n))return`${x[1]} : nombre entier attendu.`}}
+ else if(q.t==="grid"){const g=v||{};if(req&&q.rows.some(([k])=>emptyVal(g[k])))return"Répondre pour chaque ligne."}
+ else if(q.t==="rank"){const r=v||[];if(req&&!r[0])return"Indiquer au moins le premier sujet.";if(new Set(r.filter(Boolean)).size!==r.filter(Boolean).length)return"Choisir des sujets différents."}
+ else{ if(req&&emptyVal(v))return"Réponse obligatoire.";
+   if(!emptyVal(v)&&(q.t==="int"||q.t==="dec")&&v!=="NSP"){const n=num(v);if(n==null)return"Nombre attendu.";if(q.t==="int"&&!Number.isInteger(n))return"Nombre entier attendu.";if(q.min!=null&&n<q.min||q.max!=null&&n>q.max)return`Valeur entre ${q.min} et ${q.max}.`}
+   if(q.t==="tel"&&!emptyVal(v)&&!/^[0-9 +]{9,15}$/.test(v))return"Numéro de téléphone non valide.";
+   if(q.t==="sample"&&!emptyVal(v)&&!/^[A-Za-z0-9-]{3,30}$/.test(v))return"Identifiant non valide (lettres, chiffres, tirets).";}
+ if(q.chk){const m=q.chk(ctx(f));if(m)return m}
+ return null;
+}
+function checkCultures(f){
+ const e={};const cs=f.cult||[];
+ if(f.nCult==null)e._n="Indiquer le nombre de cultures principales.";
+ cs.forEach((c,i)=>{CULT_FIELDS.forEach(([k,l,t,o1,o2])=>{
+   if(k==="D1p"&&c.D1!=="autre")return; if(k==="kgc"&&c.unit!=="caisse")return;
+   const v=c[k];if(emptyVal(v)){e[i+"."+k]="Obligatoire";return}
+   if(t==="dec"||t==="int"){const n=num(v);if(n==null||n<o1||n>o2)e[i+"."+k]=`Entre ${o1} et ${o2}`;else if(t==="int"&&!Number.isInteger(n))e[i+"."+k]="Entier"}
+  });
+  if(num(c.D6)>num(c.D5))e[i+".D6"]="Dépasse la production";
+ });
+ const tot=cs.reduce((s,c)=>s+(num(c.D3)||0),0);
+ if(num(f.a.B1)!=null&&tot>num(f.a.B1)*4.01)e._sup="La somme des superficies cultivées paraît trop élevée par rapport à la superficie totale (B1).";
+ if(f.hasAutres==null)e._a="Indiquer s'il y a d'autres cultures.";
+ if(f.hasAutres==="1"){const o=f.autres||{};["sup","val","E9","E10"].forEach(k=>{if(emptyVal(o[k])||num(o[k])==null||num(o[k])<0)e["o."+k]="Obligatoire"});if(num(o.E10)>num(o.E9))e["o.E10"]="Dépasse les charges"}
+ return e;
+}
+function modErrors(i,f){
+ const m=MODULES[i];if(!modVisible(m,f))return{};
+ if(m.custom)return checkCultures(f);
+ const e={};m.qs.forEach(q=>{const r=checkQ(q,f);if(r)e[q.id]=r});return e;
+}
+
+/* ============================ RENDU : FORMULAIRE ============================ */
+function visibleMods(f){return MODULES.map((m,i)=>i).filter(i=>modVisible(MODULES[i],f))}
+function renderQ(q,f){
+ const a=f.a,v=a[q.id],err=S.errors[q.id],code=q.code||q.id;
+ let h=`<div class="q${err?" invalid":""}" data-q="${q.id}">`;
+ const head=`<span class="code">${esc(code)}</span>${esc(q.l)}${q.u?` <span class="muted">(${esc(q.u)})</span>`:""}`;
+ if(q.t==="one"||q.t==="multi"){
+  h+=`<div class="qt" id="lb-${q.id}">${head}</div><div class="choices" role="${q.t==="one"?"radiogroup":"group"}" aria-labelledby="lb-${q.id}">`;
+  opts(q,f).forEach(([c,l])=>{const on=q.t==="one"?v===c:has(v,c);
+   h+=`<label class="chip${on?" on":""}"><input type="${q.t==="one"?"radio":"checkbox"}" name="${q.id}" value="${esc(c)}" ${on?"checked":""} data-k="${q.id}" data-t="${q.t}"><span class="k">${esc(c)}</span>${esc(l)}</label>`});
+  h+=`</div>`;
+ }else if(q.t==="grid"){
+  h+=`<div class="qt">${head}</div><div class="gridq">`;
+  q.rows.forEach(([k,l])=>{const cur=(v||{})[k]||"";h+=`<label><span>${esc(l)}</span><select id="${q.id}-${k}" data-k="${q.id}" data-grid="${k}"><option value="">—</option>${q.o.map(([c,ll])=>`<option value="${c}" ${cur===c?"selected":""}>${esc(c+" · "+ll)}</option>`).join("")}</select></label>`});
+  h+=`</div>`;
+ }else if(q.t==="group"){
+  h+=`<div class="qt">${head}</div><div class="inline">`;
+  q.f.forEach(([k,l])=>{h+=`<label>${esc(l)}<input type="number" inputmode="decimal" step="any" id="${q.id}-${k}" value="${esc((v||{})[k]??"")}" data-k="${q.id}" data-sub="${k}"></label>`});
+  h+=`</div>`;
+  if(q.id==="gps")h+=`<div class="row"><button class="btn small" data-act="gps">Relever la position du téléphone</button></div><input type="text" id="gpslink" placeholder="ou coller un lien de carte" data-gps="1">`;
+ }else if(q.t==="rank"){
+  h+=`<div class="qt">${head}</div><div class="inline">`;
+  for(let r=0;r<q.n;r++){const cur=(v||[])[r]||"";h+=`<label>Priorité ${r+1}<select id="${q.id}-${r}" data-k="${q.id}" data-rank="${r}"><option value="">—</option>${q.o.map(([c,l])=>`<option value="${c}" ${cur===c?"selected":""}>${esc(l)}</option>`).join("")}</select></label>`}
+  h+=`</div>`;
+ }else if(q.t==="textarea"){
+  h+=`<label class="qt" for="in-${q.id}">${head}</label><textarea id="in-${q.id}" data-k="${q.id}">${esc(v||"")}</textarea>`;
+ }else if(q.t==="sample"){
+  h+=`<label class="qt" for="in-${q.id}">${head}</label><input type="text" id="in-${q.id}" list="dl-sample" autocomplete="off" value="${esc(v||"")}" data-k="${q.id}" placeholder="ex. 806-2-014"><datalist id="dl-sample">${S.sample.slice(0,1500).map(r=>`<option value="${esc(r.id)}">${esc([r.nom,r.douar].filter(Boolean).join(" – "))}</option>`).join("")}</datalist>`;
+  const r=S.sample.find(x=>x.id===v);if(r)h+=`<div class="calc">Liste : strate ${esc(r.cmv)} · classe ${esc(CLASSES[r.classe]||r.classe)}${r.nom?" · "+esc(r.nom):""}${r.douar?" · "+esc(r.douar):""}</div>`;
+  else if(v&&S.sample.length)h+=`<div class="hint">Identifiant absent de la liste tirée : vérifier, ou indiquer qu'il s'agit d'une remplaçante (0.5).</div>`;
+ }else{
+  const type=q.t==="tel"?"tel":q.t==="text"?"text":"number";
+  const isN=v==="NSP";
+  h+=`<label class="qt" for="in-${q.id}">${head}</label><input type="${type}" ${type==="number"?'inputmode="decimal" step="any"':""} id="in-${q.id}" value="${isN?"":esc(v??"")}" data-k="${q.id}" ${isN?"disabled":""}>`;
+  if(q.nsp)h+=`<label class="chip${isN?" on":""}" style="align-self:flex-start"><input type="checkbox" data-nsp="${q.id}" ${isN?"checked":""}>Ne sait pas (9)</label>`;
+ }
+ if(q.h)h+=`<div class="hint">${esc(q.h)}</div>`;
+ if(err)h+=`<div class="err-msg" role="alert">${esc(err)}</div>`;
+ return h+`</div>`;
+}
+function cultField(i,c,[k,l,t,o]){
+ const id=`c${i}-${k}`,err=S.errors[i+"."+k],v=c[k]??"";
+ if(t==="one")return`<label>${esc(l)}<select id="${id}" data-c="${i}" data-f="${k}" ${err?'aria-invalid="true"':""}><option value="">—</option>${o.map(([cc,ll])=>`<option value="${cc}" ${v===cc?"selected":""}>${esc(ll)}</option>`).join("")}</select>${err?`<span class="err-msg">${esc(err)}</span>`:""}</label>`;
+ return`<label>${esc(l)}<input type="${t==="text"?"text":"number"}" ${t!=="text"?'inputmode="decimal" step="any"':""} id="${id}" value="${esc(v)}" data-c="${i}" data-f="${k}">${err?`<span class="err-msg">${esc(err)}</span>`:""}</label>`;
+}
+function renderCultures(f){
+ const n=f.nCult;let h=`<div class="q"><div class="qt"><span class="code">D0</span>Nombre de cultures principales (dans l'ordre décroissant de superficie)</div><div class="choices">`;
+ [0,1,2,3,4].forEach(k=>h+=`<label class="chip${n===k?" on":""}"><input type="radio" name="nCult" value="${k}" ${n===k?"checked":""} data-ncult="1">${k}</label>`);
+ h+=`</div>${S.errors._n?`<div class="err-msg">${esc(S.errors._n)}</div>`:""}<div class="hint">Les cultures au-delà de 4 sont regroupées dans « autres cultures ».</div></div>`;
+ (f.cult||[]).forEach((c,i)=>{
+  const D=CULT_FIELDS.filter(x=>x[0][0]==="D"||x[0]==="unit"||x[0]==="kgc").filter(x=>!(x[0]==="D1p"&&c.D1!=="autre")&&!(x[0]==="kgc"&&c.unit!=="caisse"));
+  const E=CULT_FIELDS.filter(x=>x[0][0]==="E");
+  const q=num(c.D5),s=num(c.D3),kf=kgFactor(c);
+  const rdt=q!=null&&s?q/s:null;
+  h+=`<div class="card"><h3><span class="code">Culture ${i+1}</span>${esc((CULTURES.find(x=>x[0]===c.D1)||[,""])[1]||"à choisir")}</h3>
+   <div class="eyebrow" style="margin-top:10px">Production et vente</div><div class="inline">${D.map(x=>cultField(i,c,x)).join("")}</div>
+   ${rdt!=null?`<div class="calc" style="margin-top:8px">Rendement : ${fmt(rdt,1)} ${esc((UNITES.find(u=>u[0]===c.unit)||[,"unité"])[1])}/ha${kf&&c.unit!=="kg"?` · ${fmt(rdt*kf/1000,1)} t/ha`:kf===1?` · ${fmt(rdt/1000,1)} t/ha`:""}</div>`:""}
+   <div class="eyebrow" style="margin-top:12px">Charges de la campagne pour cette culture (hors eau et énergie)</div><div class="inline">${E.map(x=>cultField(i,c,x)).join("")}</div></div>`;
+ });
+ h+=`<div class="q"><div class="qt"><span class="code">D10</span>Y a-t-il d'autres cultures (regroupées) ?</div><div class="choices">${YN.map(([c,l])=>`<label class="chip${f.hasAutres===c?" on":""}"><input type="radio" name="hasAutres" value="${c}" ${f.hasAutres===c?"checked":""} data-autres="1">${l}</label>`).join("")}</div>${S.errors._a?`<div class="err-msg">${esc(S.errors._a)}</div>`:""}</div>`;
+ if(f.hasAutres==="1"){const o=f.autres||{};h+=`<div class="card"><h3><span class="code">Autres</span>Autres cultures regroupées</h3><div class="inline">${[["sup","Superficie (ha)"],["val","Valeur totale vendue (DH)"],["E9","Charges totales hors eau/énergie (DH)"],["E10","dont main-d'œuvre salariée (DH)"]].map(([k,l])=>`<label>${esc(l)}<input type="number" inputmode="decimal" step="any" id="o-${k}" value="${esc(o[k]??"")}" data-o="${k}">${S.errors["o."+k]?`<span class="err-msg">${esc(S.errors["o."+k])}</span>`:""}</label>`).join("")}</div></div>`}
+ if(S.errors._sup)h+=`<div class="banner bad">${esc(S.errors._sup)}</div>`;
+ return h;
+}
+function fmt(n,d=0){return n==null||isNaN(n)?"—":Number(n).toLocaleString("fr-FR",{maximumFractionDigits:d,minimumFractionDigits:d})}
+function sig(){const f=S.form;if(!f)return"";const m=MODULES[S.mod];return visibleMods(f).join(",")+"|"+(m.qs||[]).filter(q=>qVisible(q,f)).map(q=>q.id).join(",")+"|"+(m.id==="mC"?JSON.stringify(volume(f.a)):"")}
+function renderForm(){
+ const f=S.form,vm=visibleMods(f);if(!vm.includes(S.mod))S.mod=vm[0];
+ const m=MODULES[S.mod],pos=vm.indexOf(S.mod);
+ const errMods=new Set(vm.filter(i=>i<S.mod&&Object.keys(modErrors(i,f)).length));
+ let h=`<div class="stack"><div class="row"><button class="btn small ghost" data-act="quit">← Mes questionnaires</button><span class="spacer"></span><span class="mono muted">${esc(f.a.idExpl||"sans identifiant")}</span></div>
+ <div class="progress" aria-hidden="true"><i style="width:${Math.round(100*(pos+1)/vm.length)}%"></i></div>
+ <nav class="modnav" aria-label="Modules">${vm.map(i=>`<button data-go="${i}" aria-current="${i===S.mod}" class="${errMods.has(i)?"err":""}">${esc(MODULES[i].code)}</button>`).join("")}</nav>
+ <div><div class="eyebrow">Module ${esc(m.code)} · ${m.min} min · ${pos+1}/${vm.length}</div><h1>${esc(m.title)}</h1>${m.h?`<p class="hint">${esc(m.h)}</p>`:""}</div>
+ <div class="panel">`;
+ if(m.custom)h+=renderCultures(f);else h+=m.qs.filter(q=>qVisible(q,f)).map(q=>renderQ(q,f)).join("");
+ h+=`</div>`;
+ if(m.id==="mC"){const v=volume(f.a);h+=`<div class="calc">Volume retenu : ${v.v!=null?fmt(v.v)+" m³":"—"} ${v.src?"("+esc(v.src)+")":""}</div>`}
+ if(stopped(f))h+=`<div class="banner warn">Entretien arrêté (${f.a.consent==="2"?"refus":"exploitation inactive"}). Finalisez, puis passez à la remplaçante de la même strate.</div>`;
+ h+=`</div>`;app.innerHTML=h;
+ const last=pos===vm.length-1;
+ document.getElementById("footerIn").innerHTML=`<button class="btn" data-act="prev" ${pos===0?"disabled":""}>Précédent</button>${last?`<button class="btn primary" data-act="finish">Finaliser</button>`:`<button class="btn primary" data-act="next">Suivant</button>`}`;
+ document.getElementById("footer").hidden=false;
+ S._sig=sig();
+}
+
+/* ============================ RENDU : CONNEXION ============================ */
+function renderLogin(){
+ document.getElementById("footer").hidden=true;
+ const needApi=!(CFG.API_URL||"").trim();
+ app.innerHTML=`<div class="stack" style="max-width:460px;margin:24px auto 0">
+  <div><div class="eyebrow">Enquête exploitations · campagne 2025-2026</div><h1>Connexion</h1></div>
+  ${S.note?`<div class="banner bad">${esc(S.note)}</div>`:""}
+  <form class="panel stack" id="loginForm">
+   ${needApi?`<label class="stack" style="gap:4px"><b>Adresse du serveur</b><input type="text" id="lg-api" value="${esc(S.api)}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"><span class="hint">Fournie par le superviseur (une seule fois par téléphone).</span></label>`:""}
+   <label class="stack" style="gap:4px"><b>Code</b><input type="text" id="lg-code" autocomplete="username" placeholder="ENQ-1" autocapitalize="characters"></label>
+   <label class="stack" style="gap:4px"><b>PIN</b><input type="password" id="lg-pin" inputmode="numeric" autocomplete="current-password"></label>
+   <button class="btn primary" type="submit" data-act="login">Se connecter</button>
+   <span class="hint">La première connexion demande du réseau. Ensuite, l'application fonctionne aussi hors réseau.</span>
+  </form></div>`;
+}
+
+/* ============================ RENDU : ACCUEIL ENQUÊTEUR ============================ */
+function vstat(s){const v=s.validation;return v?v.statut:""}
+function statusPill(s){
+ const v=vstat(s);
+ if(v==="approuve")return`<span class="pill ok">Approuvé</span>`;
+ if(v==="rejete")return`<span class="pill bad">À corriger</span>`;
+ if(v==="a_revalider")return`<span class="pill warn">Corrigé, à revalider</span>`;
+ return`<span class="pill acc">Reçu</span>`;
+}
+function renderHome(){
+ document.getElementById("footer").hidden=true;
+ const drafts=Object.values(S.drafts).sort((x,y)=>y.updatedAt-x.updatedAt);
+ let h=`<div class="stack">`;
+ if(S.note)h+=`<div class="banner bad">${esc(S.note)}</div>`;
+ h+=`<div class="row"><div><div class="eyebrow">${esc(S.user.nom||S.user.code)} · ${esc(S.user.code)}</div><h1>Mes questionnaires</h1></div><span class="spacer"></span><button class="btn primary" data-act="new">Nouveau questionnaire</button></div>`;
+ h+=`<div class="grid"><div class="panel kpi"><b class="mono">${S.mine.length}</b><span>reçus par le serveur</span></div><div class="panel kpi"><b class="mono">${S.outbox.length}</b><span>en attente d'envoi</span></div><div class="panel kpi"><b class="mono">${drafts.length}</b><span>brouillons</span></div><div class="panel kpi"><b class="mono">${S.sample.length}</b><span>exploitations dans la liste</span></div></div>`;
+ if(S.outbox.length)h+=`<div class="banner warn row"><span>${S.outbox.length} questionnaire(s) finalisé(s) pas encore envoyé(s).</span><span class="spacer"></span><button class="btn small" data-act="sync" ${navigator.onLine?"":"disabled"}>Envoyer maintenant</button></div>`;
+ if(drafts.length){h+=`<div class="panel"><h2>Brouillons</h2>${drafts.map(d=>`<div class="list-item"><div class="l"><b class="mono">${esc(d.a.idExpl||"sans identifiant")}</b><span class="muted">Modifié ${new Date(d.updatedAt).toLocaleString("fr-FR")}</span></div><div class="row"><button class="btn small" data-resume="${d.id}">Reprendre</button><button class="btn small danger" data-deldraft="${d.id}">Supprimer</button></div></div>`).join("")}</div>`}
+ const pend=S.outbox.map(s=>({id:s.id,idExpl:s.a.idExpl,strate:s.a.strate,classe:s.a.classe,durMin:s.durMin,status:s.status,endedAt:s.endedAt,_pending:true}));
+ const sent=[...pend,...S.mine.filter(m=>!S.outbox.some(o=>o.id===m.id))].sort((x,y)=>(y.endedAt||0)-(x.endedAt||0));
+ h+=`<div class="panel"><div class="row"><h2>Questionnaires finalisés</h2><span class="spacer"></span><button class="btn small" data-act="refresh" ${navigator.onLine?"":"disabled"}>${S.loading?"Actualisation…":"Actualiser"}</button></div>`;
+ if(S.mineAt)h+=`<div class="hint">État du serveur au ${new Date(S.mineAt).toLocaleString("fr-FR")}</div>`;
+ if(!sent.length)h+=`<p class="muted">Aucun questionnaire finalisé pour l'instant. Touchez « Nouveau questionnaire » pour commencer : l'identifiant de l'exploitation se choisit dans la liste tirée.</p>`;
+ sent.forEach(s=>{const v=s.validation;h+=`<div class="list-item"><div class="l"><b class="mono">${esc(s.idExpl)}</b><span class="muted">Strate ${esc(s.strate)} · ${esc(CLASSES[s.classe]||"")} · ${s.durMin!=null?s.durMin+" min":""}${s.status!=="complet"?" · "+esc(s.status):""}</span>${v&&v.statut==="rejete"&&v.motif?`<span class="err-msg">Motif : ${esc(v.motif)}</span>`:""}</div><div class="row">${s._pending?`<span class="pill warn">En attente</span>`:statusPill(s)}${v&&v.statut==="rejete"?`<button class="btn small" data-fix="${s.id}">Corriger</button>`:""}</div></div>`});
+ h+=`</div>`;
+ h+=`<details class="panel"><summary><b>Mode d'emploi</b></summary><ol class="hint"><li>Installez l'application : menu du navigateur → « Ajouter à l'écran d'accueil ». Elle s'ouvre ensuite sans réseau.</li><li>Le matin, avec du réseau, touchez « Actualiser » pour charger la liste tirée et les retours du superviseur.</li><li>Un brouillon est enregistré sur le téléphone à chaque réponse.</li><li>« Finaliser » contrôle tout le questionnaire, puis l'envoie dès qu'il y a du réseau. Sinon il reste « en attente » ; il partira automatiquement au retour du réseau.</li><li>Un questionnaire rejeté par le superviseur réapparaît avec le motif et un bouton « Corriger » (réseau nécessaire).</li><li>Ne videz pas les données du navigateur tant que des questionnaires sont « en attente ».</li></ol></details>`;
+ h+=`<div class="row"><span class="spacer"></span><button class="btn small ghost" data-act="logout">Se déconnecter</button></div>`;
+ app.innerHTML=h+`</div>`;
+}
+
+/* ============================ RENDU : SUPERVISEUR ============================ */
+function okSub(s){return s.status==="complet"&&vstat(s)!=="rejete"}
+function counts(subs){const c={};subs.filter(okSub).forEach(s=>{const k=s.strate+"-"+(s.strate==="IP"?"*":s.classe);c[k]=(c[k]||0)+1});return c}
+function renderAdmin(){
+ document.getElementById("footer").hidden=true;
+ const subs=[...S.all].sort((x,y)=>(y.endedAt||0)-(x.endedAt||0)),c=counts(subs);
+ const done=subs.filter(okSub).length,appr=subs.filter(s=>vstat(s)==="approuve").length,pend=subs.filter(s=>!vstat(s)||vstat(s)==="a_revalider").length;
+ const durs=subs.filter(s=>s.durMin!=null&&s.status==="complet").map(s=>s.durMin).sort((a,b)=>a-b);
+ const med=durs.length?durs[Math.floor(durs.length/2)]:null;
+ let h=`<div class="stack"><div class="row"><div><div class="eyebrow">Superviseur · données du classeur Google</div><h1>Suivi de l'enquête</h1></div><span class="spacer"></span><button class="btn small" data-act="refresh" ${navigator.onLine?"":"disabled"}>${S.loading?"Actualisation…":"Actualiser"}</button></div>`;
+ if(S.note)h+=`<div class="banner bad">${esc(S.note)}</div>`;
+ h+=`<div class="tabs" role="tablist">${[["avancement","Avancement"],["questionnaires","Questionnaires"],["donnees","Données"]].map(([k,l])=>`<button class="tab" role="tab" aria-current="${S.adminTab===k}" data-atab="${k}">${l}</button>`).join("")}</div>`;
+ if(S.adminTab==="avancement"){
+  h+=`<div class="grid"><div class="panel kpi"><b class="mono">${done}<span class="muted" style="font-size:18px"> / ${QUOTA_TOTAL}</span></b><span>questionnaires complets</span></div><div class="panel kpi"><b class="mono">${appr}</b><span>approuvés</span></div><div class="panel kpi"><b class="mono">${pend}</b><span>à valider</span></div><div class="panel kpi"><b class="mono">${med!=null?med+" min":"—"}</b><span>durée médiane d'entretien</span></div></div>`;
+  h+=`<div class="tablewrap"><table><thead><tr><th>Strate</th><th>Classe</th><th class="num">Réalisés</th><th class="num">Quota</th><th>Avancement</th></tr></thead><tbody>`;
+  QUOTAS.forEach(q=>q.c.forEach((n,k)=>{const r=c[q.s+"-"+(k+1)]||0;h+=`<tr><td>${q.s} ${esc(q.n)}</td><td>${CLASSES[k+1]}</td><td class="num">${r}</td><td class="num">${n}</td><td><div class="bar"><i class="${r>=n?"full":""}" style="width:${Math.min(100,Math.round(100*r/n))}%"></i></div></td></tr>`}));
+  const ip=Object.keys(c).filter(k=>k.startsWith("IP")).reduce((s,k)=>s+c[k],0);
+  h+=`<tr><td>Irrigation privée</td><td>toutes</td><td class="num">${ip}</td><td class="num">${QUOTA_IP}</td><td><div class="bar"><i class="${ip>=QUOTA_IP?"full":""}" style="width:${Math.min(100,Math.round(100*ip/QUOTA_IP))}%"></i></div></td></tr></tbody></table></div>`;
+  const byEnq={};subs.forEach(s=>{const k=s.enq||"?";byEnq[k]=byEnq[k]||{n:0,c:0,d:[],r:0};byEnq[k].n++;if(s.status==="complet")byEnq[k].c++;if(s.status==="refus")byEnq[k].r++;if(s.durMin!=null)byEnq[k].d.push(s.durMin)});
+  h+=`<div class="panel"><h2>Par enquêteur</h2><div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>Enquêteur</th><th class="num">Questionnaires</th><th class="num">Complets</th><th class="num">Refus</th><th class="num">Durée moyenne</th></tr></thead><tbody>${Object.entries(byEnq).map(([k,v])=>`<tr><td class="mono">${esc(k)}</td><td class="num">${v.n}</td><td class="num">${v.c}</td><td class="num">${v.r}</td><td class="num">${v.d.length?Math.round(v.d.reduce((a,b)=>a+b,0)/v.d.length)+" min":"—"}</td></tr>`).join("")||`<tr><td colspan="5" class="muted">Aucun questionnaire reçu pour l'instant.</td></tr>`}</tbody></table></div></div>`;
+ }
+ if(S.adminTab==="questionnaires"){
+  const fl=S.filter;const list=subs.filter(s=>!fl||(fl==="avalider"&&(!vstat(s)||vstat(s)==="a_revalider"))||(fl==="court"&&s.durMin!=null&&s.durMin<20)||(fl==="rejete"&&vstat(s)==="rejete"));
+  h+=`<div class="row">${[["","Tous"],["avalider","À valider"],["court","Moins de 20 min"],["rejete","Rejetés"]].map(([k,l])=>`<button class="tab" aria-current="${fl===k}" data-filter="${k}">${l}</button>`).join("")}</div>`;
+  h+=`<div class="tablewrap"><table><thead><tr><th>Identifiant</th><th>Strate</th><th>Enquêteur</th><th class="num">Durée</th><th>Statut</th><th></th></tr></thead><tbody>${list.map(s=>{const v=vstat(s);return`<tr><td class="mono">${esc(s.idExpl)}</td><td>${esc(s.strate)} · ${esc(CLASSES[s.classe]||"")}</td><td class="mono">${esc(s.enq)}</td><td class="num">${s.durMin!=null?s.durMin+" min":"—"}</td><td>${s.status!=="complet"?`<span class="pill">${esc(s.status)}</span>`:v==="approuve"?`<span class="pill ok">Approuvé</span>`:v==="rejete"?`<span class="pill bad">Rejeté</span>`:`<span class="pill warn">À valider</span>`}${s.durMin!=null&&s.durMin<20&&s.status==="complet"?` <span class="pill bad">court</span>`:""}</td><td><button class="btn small" data-detail="${s.id}">Ouvrir</button></td></tr>`}).join("")||`<tr><td colspan="6" class="muted">Aucun questionnaire dans ce filtre.</td></tr>`}</tbody></table></div>`;
+  if(S.detail)h+=S.detailSub?renderDetail(S.detailSub,subs.find(x=>x.id===S.detail)):`<div class="panel" id="detail">Chargement du questionnaire…</div>`;
+ }
+ if(S.adminTab==="donnees"){
+  h+=`<div class="panel stack"><h2>Où sont les données ?</h2><p>Tout arrive dans le classeur Google Sheets du projet : onglets <b>Exploitations</b> (une ligne par questionnaire, avec les indicateurs calculés), <b>Cultures</b> (une ligne par culture), <b>Validations</b> et <b>Brut</b> (sauvegarde intégrale). Pour un fichier Excel : dans le classeur, menu Fichier → Télécharger → Microsoft Excel.</p>
+  ${CFG.SHEET_URL?`<div class="row"><a class="btn primary" href="${esc(CFG.SHEET_URL)}" target="_blank" rel="noopener">Ouvrir le classeur</a></div>`:""}
+  <p class="hint">La liste tirée se colle directement dans l'onglet <b>Echantillon</b> (identifiant, strate, classe, nom, douar, téléphone) ; les comptes se gèrent dans l'onglet <b>Enqueteurs</b>. Les téléphones des exploitants restent dans le classeur : ils ne sont pas envoyés aux téléphones des enquêteurs.</p>
+  <div class="row"><button class="btn" data-act="dict" ${navigator.onLine?"":"disabled"}>Écrire le dictionnaire des codes dans le classeur</button><span class="muted">${S.sample.length} exploitation(s) dans la liste tirée</span></div></div>`;
+ }
+ app.innerHTML=h+`</div>`;
+}
+function renderDetail(s,sum){
+ const d=derive(s),v=sum&&sum.validation;
+ const rows=[];MODULES.forEach(m=>{if(m.custom)return;(m.qs||[]).forEach(q=>{const x=s.a[q.id];if(emptyVal(x))return;rows.push([`${q.code||q.id} ${q.l}`,fmtAns(q,x)])})});
+ return`<div class="panel detail stack" id="detail"><div class="row"><h2 class="mono">${esc(s.a.idExpl)}</h2><span class="spacer"></span><button class="btn small ghost" data-act="closedetail">Fermer</button></div>
+ <div class="grid"><div class="kpi"><b class="mono" style="font-size:20px">${d.vol!=null?fmt(d.vol)+" m³":"—"}</b><span>volume d'eau (${esc(d.volSrc||"—")})</span></div><div class="kpi"><b class="mono" style="font-size:20px">${d.va!=null?fmt(d.va)+" DH":"—"}</b><span>valeur ajoutée</span></div><div class="kpi"><b class="mono" style="font-size:20px">${d.prodEau!=null?fmt(d.prodEau,2)+" DH/m³":"—"}</b><span>productivité de l'eau</span></div><div class="kpi"><b style="font-size:16px">${esc(d.mode)}</b><span>mode de production</span></div></div>
+ <dl>${rows.map(([k,x])=>`<dt>${esc(k)}</dt><dd>${esc(x)}</dd>`).join("")}</dl>
+ ${(s.cult||[]).map((c,i)=>`<div class="card"><h3>Culture ${i+1} · ${esc((CULTURES.find(x=>x[0]===c.D1)||[,""])[1])}</h3><dl>${CULT_FIELDS.filter(x=>!emptyVal(c[x[0]])).map(x=>`<dt>${esc(x[0]+" "+x[1])}</dt><dd>${esc(x[2]==="one"?((x[3].find(o=>o[0]===c[x[0]])||[,c[x[0]]])[1]):c[x[0]])}</dd>`).join("")}</dl></div>`).join("")}
+ <div class="row"><input type="text" id="motif" placeholder="Motif en cas de rejet" style="flex:1;min-width:200px" value="${esc(v&&v.motif||"")}"><button class="btn primary" data-valid="approuve" data-id="${s.id}">Approuver</button><button class="btn danger" data-valid="rejete" data-id="${s.id}">Rejeter</button></div></div>`;
+}
+function fmtAns(q,x){
+ if(q.t==="group")return q.f.map(([k,l])=>`${l} : ${x[k]??"—"}`).join(" · ");
+ if(q.t==="grid")return q.rows.map(([k,l])=>`${l} : ${(q.o.find(o=>o[0]===x[k])||[,"—"])[1]}`).join(" · ");
+ if(q.t==="rank")return(x||[]).filter(Boolean).map(c=>(q.o.find(o=>o[0]===c)||[,c])[1]).join(" > ");
+ const o=Array.isArray(q.o)?q.o:null;
+ if(q.t==="one"&&o)return(o.find(z=>z[0]===x)||[,x])[1];
+ if(q.t==="multi"&&o)return x.map(c=>(o.find(z=>z[0]===c)||[,c])[1]).join(", ");
+ return String(x);
+}
+
+/* ============================ NAVIGATION ============================ */
+function renderTabs(){
+ const t=document.getElementById("tabs");
+ const items=[["home","Collecte"]];if(isSup())items.push(["admin","Superviseur"]);
+ t.innerHTML=S.view==="form"||!S.user?"":items.map(([k,l])=>`<button class="tab" aria-current="${S.view===k}" data-view="${k}">${l}</button>`).join("");
+ const n=document.getElementById("net");n.textContent=navigator.onLine?"en ligne":"hors ligne";n.className="net "+(navigator.onLine?"on":"off");
+}
+function render(){renderTabs();if(!S.user)renderLogin();else if(S.view==="form")renderForm();else if(S.view==="admin"&&isSup())renderAdmin();else renderHome()}
+
+/* ============================ ACTIONS FORMULAIRE ============================ */
+function newForm(pref){
+ const codeEnq=S.user?S.user.code:"";
+ S.form=pref||{id:uid(),a:{codeEnq},cult:[],nCult:null,hasAutres:null,autres:{},startedAt:Date.now(),updatedAt:Date.now()};
+ S.mod=0;S.errors={};S.view="form";render();window.scrollTo(0,0);
+}
+function persistDraft(){if(!S.form)return;S.form.updatedAt=Date.now();S.drafts[S.form.id]=S.form;saveLocal()}
+function applySample(id){const r=S.sample.find(x=>x.id===id);if(!r)return;const a=S.form.a;a.strate=r.cmv;a.classe=r.classe;if(r.douar&&!a.douar)a.douar=r.douar}
+function goto(i){S.mod=i;S.errors={};render();window.scrollTo(0,0)}
+function step(dir){
+ const f=S.form,vm=visibleMods(f),pos=vm.indexOf(S.mod);
+ if(dir>0){const e=modErrors(S.mod,f);if(Object.keys(e).length){S.errors=e;render();const el=document.querySelector(".invalid,.err-msg");if(el)el.scrollIntoView({block:"center"});toast("Corriger les réponses signalées");return}}
+ if(dir>0&&stopped(f)&&S.mod===0){finish();return}
+ const nx=vm[pos+dir];if(nx!=null)goto(nx);
+}
+function finish(){
+ const f=S.form,vm=visibleMods(f);
+ for(const i of vm){const e=modErrors(i,f);if(Object.keys(e).length){S.mod=i;S.errors=e;render();toast("Module "+MODULES[i].code+" incomplet");return}}
+ const sub={id:f.id,a:f.a,cult:f.cult,nCult:f.nCult,hasAutres:f.hasAutres,autres:f.autres,startedAt:f.startedAt,endedAt:Date.now(),
+  durMin:Math.round((Date.now()-f.startedAt)/60000),status:f.a.consent==="2"?"refus":f.a.active==="2"?"inactive":"complet",formVersion:FORM_VERSION};
+ S.outbox=S.outbox.filter(x=>x.id!==sub.id);S.outbox.push(sub);delete S.drafts[f.id];saveLocal();
+ S.form=null;S.view="home";toast("Questionnaire finalisé");render();sync();
+}
+function gps(){
+ if(!navigator.geolocation){toast("Position indisponible sur ce téléphone");return}
+ toast("Recherche de la position…");
+ navigator.geolocation.getCurrentPosition(p=>{if(!S.form)return;S.form.a.gps={lat:p.coords.latitude.toFixed(6),lon:p.coords.longitude.toFixed(6),acc:String(Math.round(p.coords.accuracy))};persistDraft();renderForm();toast("Position relevée (± "+Math.round(p.coords.accuracy)+" m)")},
+  e=>toast(e.code===1?"Autorisez la localisation pour cette application":"Position introuvable : réessayez à l'extérieur"),{enableHighAccuracy:true,timeout:25000,maximumAge:60000});
+}
+
+/* ============================ ÉVÉNEMENTS ============================ */
+document.addEventListener("submit",async ev=>{
+ if(ev.target.id!=="loginForm")return;ev.preventDefault();
+ const code=document.getElementById("lg-code").value.trim(),pin=document.getElementById("lg-pin").value.trim();
+ const apiEl=document.getElementById("lg-api");if(apiEl){S.api=apiEl.value.trim();LS.set("redi_api",S.api)}
+ if(!S.api||!/^(https:\/\/|http:\/\/localhost)/.test(S.api)){S.note="Indiquer l'adresse du serveur (elle commence par https://).";render();return}
+ if(!code||!pin){S.note="Indiquer le code et le PIN.";render();return}
+ if(!navigator.onLine){S.note="La première connexion demande du réseau.";render();return}
+ try{const j=await api("login",{},{code,pin});S.user={code:j.user.code,nom:j.user.nom,role:j.user.role,pin};LS.set("redi_user",S.user);S.note="";S.view="home";render();await refresh();sync()}
+ catch(e){S.note=ERR[e.code]||"Connexion impossible.";render()}
+});
+document.addEventListener("click",async ev=>{
+ const b=ev.target.closest("button");if(!b)return;
+ const d=b.dataset;
+ if(d.act==="login")return; // géré par submit
+ if(d.view){S.view=d.view;S.detail=null;S.detailSub=null;render();if(d.view==="admin")refresh(true);return}
+ if(d.go){if(+d.go>S.mod){for(const i of visibleMods(S.form)){if(i>=+d.go)break;const e=modErrors(i,S.form);if(Object.keys(e).length){goto(i);S.errors=e;render();toast("Module "+MODULES[i].code+" incomplet");return}}}goto(+d.go);return}
+ if(d.resume){S.form=S.drafts[d.resume];S.mod=0;S.errors={};S.view="form";render();return}
+ if(d.deldraft){if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Confirmer";setTimeout(()=>{if(b.isConnected){b.dataset.confirm="";b.textContent="Supprimer"}},3000);return}delete S.drafts[d.deldraft];saveLocal();render();return}
+ if(d.fix){if(!navigator.onLine){toast("Réseau nécessaire pour ouvrir la correction");return}
+  try{const j=await api("get",{id:d.fix});const s=j.sub;newForm({id:s.id,a:s.a,cult:s.cult||[],nCult:s.nCult,hasAutres:s.hasAutres,autres:s.autres||{},startedAt:s.startedAt,updatedAt:Date.now()})}catch(e){toast(ERR[e.code]||"Ouverture impossible")}return}
+ if(d.atab){S.adminTab=d.atab;S.detail=null;S.detailSub=null;render();return}
+ if(d.filter!=null&&b.classList.contains("tab")&&S.adminTab==="questionnaires"){S.filter=d.filter;render();return}
+ if(d.detail){S.detail=d.detail;S.detailSub=null;render();try{const j=await api("get",{id:d.detail});if(S.detail===d.detail){S.detailSub=j.sub;render();const el=document.getElementById("detail");if(el)el.scrollIntoView()}}catch(e){toast(ERR[e.code]||"Ouverture impossible");S.detail=null;render()}return}
+ if(d.valid){const motif=((document.getElementById("motif")||{}).value||"").trim();if(d.valid==="rejete"&&!motif){toast("Indiquer le motif du rejet");return}
+  b.disabled=true;try{await api("validate",{id:d.id,statut:d.valid,motif});toast(d.valid==="approuve"?"Questionnaire approuvé":"Questionnaire rejeté");S.detail=null;S.detailSub=null;await refresh(true)}catch(e){b.disabled=false;toast(ERR[e.code]||"Validation non enregistrée")}return}
+ switch(d.act){
+  case"new":newForm();break;
+  case"quit":persistDraft();S.form=null;S.view="home";render();break;
+  case"next":step(1);break;case"prev":step(-1);break;case"finish":finish();break;
+  case"sync":sync();break;
+  case"refresh":refresh();break;
+  case"gps":gps();break;
+  case"closedetail":S.detail=null;S.detailSub=null;render();break;
+  case"dict":b.disabled=true;try{await api("dict",{rows:dictRows()});toast("Dictionnaire écrit dans le classeur")}catch(e){toast(ERR[e.code]||"Écriture impossible")}b.disabled=false;break;
+  case"logout":if(S.outbox.length){toast("Envoyez d'abord les questionnaires en attente");break}if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Confirmer la déconnexion";setTimeout(()=>{if(b.isConnected){b.dataset.confirm="";b.textContent="Se déconnecter"}},3000);break}logout();break;
+ }
+});
+document.addEventListener("change",ev=>{
+ const el=ev.target,d=el.dataset;if(!S.form)return;const f=S.form,a=f.a;
+ if(d.t==="one"){a[d.k]=el.value}
+ else if(d.t==="multi"){const q=findQ(d.k),cur=new Set(a[d.k]||[]);if(el.checked){if(q.ex&&q.ex.includes(el.value))cur.clear();else(q.ex||[]).forEach(x=>cur.delete(x));cur.add(el.value)}else cur.delete(el.value);a[d.k]=[...cur]}
+ else if(d.grid!=null){a[d.k]=Object.assign({},a[d.k],{[d.grid]:el.value})}
+ else if(d.rank!=null){a[d.k]=a[d.k]||[];a[d.k][+d.rank]=el.value}
+ else if(d.nsp){a[d.nsp]=el.checked?"NSP":""}
+ else if(d.ncult){const n=+el.value;f.nCult=n;f.cult=(f.cult||[]).slice(0,n);while(f.cult.length<n)f.cult.push({})}
+ else if(d.autres){f.hasAutres=el.value;if(el.value==="2")f.autres={}}
+ else if(d.c!=null&&el.tagName==="SELECT"){f.cult[+d.c][d.f]=el.value}
+ else if((el.tagName==="INPUT"||el.tagName==="TEXTAREA")&&(d.k||d.sub||d.c!=null||d.o)){persistDraft();if(sig()!==S._sig)setTimeout(()=>{const fid=document.activeElement&&document.activeElement.id;const y=window.scrollY;renderForm();window.scrollTo(0,y);if(fid){const n=document.getElementById(fid);if(n)n.focus({preventScroll:true})}},0);return}
+ else return;
+ if(d.k==="idExpl")applySample(el.value);
+ persistDraft();const y=window.scrollY;renderForm();window.scrollTo(0,y);
+});
+document.addEventListener("input",ev=>{
+ const el=ev.target,d=el.dataset;if(!S.form)return;const f=S.form,a=f.a;
+ if(d.gps){const m=el.value.match(/(-?\d{1,2}\.\d+)[,\s/]+(-?\d{1,3}\.\d+)/);if(m){a.gps={lat:m[1],lon:m[2],acc:""};persistDraft();renderForm()}return}
+ if(d.sub){a[d.k]=Object.assign({},a[d.k],{[d.sub]:el.value})}
+ else if(d.c!=null&&el.tagName==="INPUT"){f.cult[+d.c][d.f]=el.value}
+ else if(d.o){f.autres=Object.assign({},f.autres,{[d.o]:el.value})}
+ else if(d.k&&(el.tagName==="INPUT"||el.tagName==="TEXTAREA")&&el.type!=="radio"&&el.type!=="checkbox"){a[d.k]=el.value;if(d.k==="idExpl"&&S.sample.some(r=>r.id===el.value)){applySample(el.value);persistDraft();renderForm();return}}
+ else return;
+ persistDraft();
+});
+function findQ(id){for(const m of MODULES)for(const q of(m.qs||[]))if(q.id===id)return q}
+window.addEventListener("online",()=>{renderTabs();sync();refresh(true)});
+window.addEventListener("offline",()=>{renderTabs();if(S.view!=="form")render()});
+
+/* ============================ DÉMARRAGE ============================ */
+render();
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+if("serviceWorker" in navigator&&window.isSecureContext)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if(S.user){refresh(true).then(sync)}
+})();
+</script>
+</body>
+</html>
