@@ -1,6 +1,6 @@
 /* Fonctionnement hors réseau : les fichiers de l'application sont gardés sur le téléphone.
    Changer VERSION à chaque mise à jour de l'application pour forcer le rafraîchissement. */
-const VERSION = "redi-massa-v5-1";
+const VERSION = "redi-massa-v5-2";
 const FILES = ["./", "./index.html", "./config.js", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
