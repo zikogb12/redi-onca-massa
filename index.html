@@ -144,6 +144,7 @@ const YN=[["1","Oui"],["2","Non"]];
 const ONP=[["1","Oui"],["2","Non"],["3","Pas nécessaire"]];
 const CULTURES=[["1","Tomate"],["2","Tomate cerise"],["3","Poivron"],["4","Haricot vert"],["5","Courgette"],["6","Concombre"],["7","Aubergine"],["8","Melon / pastèque"],["9","Pomme de terre"],["10","Oignon"],["11","Carotte"],["12","Fraise"],["13","Framboise"],["14","Myrtille"],["15","Banane"],["16","Agrumes"],["17","Olivier"],["18","Autre arboriculture"],["19","Maïs fourrager"],["20","Luzerne"],["21","Autre fourrage (bersim, orge…)"],["22","Céréales"],["23","Autre (préciser)"]];
 const FOURRAGES=["19","20","21"];
+const D1_AUTRE=["18","21","23"];
 const ACTIVITES=[["lait","Lait (vaches laitières)"],["viande","Bovins viande"],["ovcap","Ovins / caprins"],["vol","Volailles"],["ruch","Ruches (apiculture)"],["autre","Autre élevage"]];
 const CIRCUITS_L=[["1","COPAG"],["2","Centrale laitière"],["3","Centre de collecte"],["4","Coopérative"],["5","Vente directe"],["6","Transformation à la ferme"],["7","Souk / intermédiaire"],["8","Autre"]];
 const UNITES_L=[["l","litres"],["t","têtes"],["o","œufs"],["kg","kg"]];
@@ -189,6 +190,7 @@ const MODULES=[
 ]},
 {id:"mB",code:"B",title:"Structure de l'exploitation",min:3,h:"La superficie exploitée (B1) est reprise de 0.9.",qs:[
  {id:"B2",t:"multi",l:"Mode de faire-valoir",o:[["1","Melk"],["2","Location"],["3","Association"],["4","Indivision"],["5","Autre"]]},
+ {id:"B2p",t:"text",l:"Préciser l'autre mode de faire-valoir",rel:a=>has(a.B2,"5")},
  {id:"B3",t:"dec",l:"Superficie irriguée",u:"ha",min:0,max:5000,chk:a=>num(a.B3)>num(a.B1)?"La superficie irriguée dépasse la superficie exploitée (0.9).":null},
  {id:"B4",t:"dec",l:"dont superficie en goutte-à-goutte",u:"ha",min:0,max:5000,chk:a=>num(a.B4)>num(a.B3)?"Le goutte-à-goutte dépasse la superficie irriguée.":null},
  {id:"B5",t:"group",l:"dont superficie en aspersion / gravitaire",f:[["asp","Aspersion (ha)",0,5000],["grav","Gravitaire (ha)",0,5000]],dec:true,chk:a=>{const s=(num(a.B4)||0)+(num((a.B5||{}).asp)||0)+(num((a.B5||{}).grav)||0);return s>(num(a.B3)||0)+0.01?"Goutte-à-goutte + aspersion + gravitaire dépassent la superficie irriguée.":null}},
@@ -199,6 +201,7 @@ const MODULES=[
 ]},
 {id:"mC",code:"C",title:"Eau d'irrigation",min:4,h:"Le coût de l'eau et de l'énergie est relevé par culture au module E.",qs:[
  {id:"C1",t:"multi",l:"Sources d'eau utilisées pendant la campagne",o:[["1","Puits / forage individuel"],["2","Puits collectif"],["3","Réseau collectif (ORMVASM)"],["4","Eau dessalée"],["5","Autre"]]},
+ {id:"C1p",t:"text",l:"Préciser l'autre source d'eau",rel:a=>has(a.C1,"5")},
  {id:"C2",t:"one",l:"Source principale",o:a=>(a.C1||[]).map(c=>[c,MODULES[3].qs[0].o.find(x=>x[0]===c)[1]]),rel:a=>(a.C1||[]).length>1},
  {id:"C3",t:"one",l:"Énergie de pompage de la source principale",o:[["1","Électricité réseau"],["2","Solaire"],["3","Gaz butane"],["4","Gasoil"],["5","Sans pompage"]]},
  {id:"C4c",code:"C4",t:"one",l:"Le volume d'eau de la campagne est-il connu par compteur ou factures ?",o:[["1","Oui, compteur"],["2","Oui, factures"],["3","Non"]]},
@@ -243,10 +246,12 @@ const MODULES=[
  {id:"G5",t:"one",l:"La dernière fois, avez-vous modifié votre irrigation ou un traitement après une alerte ?",o:YN,rel:a=>a.G3==="1"||a.G3==="2"},
  {id:"G6",t:"one",l:"Pour recevoir des alertes à l'avenir, quel moyen préférez-vous ?",o:[["1","SMS"],["2","WhatsApp écrit"],["3","WhatsApp vocal"],["4","Appel"],["5","Application"],["6","Réunion"],["7","Radio / télévision"]]},
  {id:"G7",t:"rank",l:"Les 3 sujets sur lesquels vous souhaitez être formé ou conseillé, par ordre de priorité",n:3,o:[["1","Pilotage de l'irrigation"],["2","Fertigation"],["3","Maladies et ravageurs"],["4","Économie d'eau / nappe"],["5","Eau dessalée"],["6","Choix variétal"],["7","Conduite sous serre"],["8","Élevage"],["9","Gestion et comptabilité"],["10","Commercialisation / agrégation"],["11","Transformation / valorisation"],["12","Autre"]]},
+ {id:"G7p",t:"text",l:"Préciser l'autre sujet",rel:a=>has(a.G7,"12")},
  {id:"G8",t:"one",l:"Participeriez-vous à des activités du projet (journées, formations, écoles aux champs) ?",o:YN}
 ]},
 {id:"mH",code:"H",title:"Organisation, agrégation et commercialisation",min:2,qs:[
  {id:"H1",t:"multi",l:"Êtes-vous membre de…",o:[["0","Aucune organisation"],["1","AUEA"],["2","Coopérative"],["3","Association professionnelle"],["4","GIE"],["5","Union / fédération"],["6","Autre"]],ex:["0"]},
+ {id:"H1p",t:"text",l:"Préciser l'autre organisation",rel:a=>has(a.H1,"6")},
  {id:"H2",t:"one",l:"Êtes-vous engagé dans un projet d'agrégation ?",o:YN},
  {id:"H2b",t:"one",l:"Êtes-vous agrégateur ou agrégé ?",o:[["1","Agrégateur"],["2","Agrégé"]],rel:a=>a.H2==="1"},
  {id:"H3",t:"one",l:"Filière concernée",o:CULTURES,rel:a=>a.H2==="1"},
@@ -268,16 +273,21 @@ const MODULES=[
  {id:"J3",t:"one",l:"Qui réalise les traitements phytosanitaires ?",o:[["1","Exploitant / famille"],["2","Main-d'œuvre de l'exploitation"],["3","Prestataire"],["4","Pas de traitement"]]},
  {id:"J4",t:"multi",l:"Équipement porté pendant les traitements",o:[["0","Aucun"],["1","Masque"],["2","Gants"],["3","Combinaison"],["4","Lunettes"]],ex:["0"],rel:a=>a.J3&&a.J3!=="4"},
  {id:"J5",t:"one",l:"Où sont stockés les produits phytosanitaires ?",o:[["1","Local fermé réservé"],["2","Dans la maison"],["3","À l'air libre"],["4","Pas de stock"],["5","Autre"]]},
+ {id:"J5p",t:"text",l:"Préciser l'autre lieu de stockage",rel:a=>a.J5==="5"},
  {id:"J6",t:"one",l:"Que faites-vous des emballages vides ?",o:[["1","Collectés / rendus au fournisseur"],["2","Brûlés"],["3","Enfouis"],["4","Jetés"],["5","Réutilisés"],["6","Autre"]]},
+ {id:"J6p",t:"text",l:"Préciser ce qui est fait des emballages",rel:a=>a.J6==="6"},
  {id:"J7",t:"one",l:"Que faites-vous des plastiques usagés (serre, paillage, goutteurs) ?",o:[["1","Collectés / rendus au fournisseur"],["2","Brûlés"],["3","Enfouis"],["4","Jetés"],["5","Réutilisés"],["6","Autre"]]},
+ {id:"J7p",t:"text",l:"Préciser ce qui est fait des plastiques",rel:a=>a.J7==="6"},
  {id:"J8",t:"one",l:"Des personnes de moins de 18 ans travaillent-elles sur l'exploitation contre rémunération ?",o:YN},
  {id:"J9",t:"one",l:"Un accident lié au travail agricole est-il survenu au cours des 12 derniers mois ?",o:YN}
 ]},
 {id:"mK",code:"K",title:"Charges fixes, financement et clôture",min:2,qs:[
  {id:"K0",t:"group",l:"Charges fixes de l'exploitation sur la campagne 2025-2026 (DH, 0 si aucune)",h:"Charges non affectées à une culture ou à une activité d'élevage. Ne pas recompter ce qui a déjà été déclaré aux modules E et L.",f:[["loyer","Loyer des terres louées",0,1e8],["assur","Assurance agricole",0,1e8],["inter","Intérêts des crédits",0,1e8],["entret","Entretien et réparations : serres, matériel, réseau d'irrigation",0,1e8],["cotis","Cotisations : AUEA, coopérative, association",0,1e8],["autre","Autres charges fixes",0,1e8]]},
+ {id:"K0p",t:"text",l:"Préciser les autres charges fixes",rel:a=>num((a.K0||{}).autre)>0},
  {id:"K1",t:"multi",l:"Au cours des 3 dernières années, avez-vous obtenu ou souscrit…",o:[["0","Rien"],["1","Crédit bancaire ou de microfinance"],["2","Subvention FDA (hors goutte-à-goutte)"],["3","Autre aide publique"],["4","Assurance agricole (multirisque climatique)"]],ex:["0"]},
+ {id:"K1p",t:"text",l:"Préciser l'autre aide publique",rel:a=>has(a.K1,"3")},
  {id:"K2",t:"one",l:"Acceptez-vous d'être recontacté chaque année pour cette enquête ?",o:YN},
- {id:"K3",t:"tel",l:"Téléphone de contact",rel:a=>a.K2==="1"},
+ {id:"K3",t:"tel",l:"Numéro de téléphone du chef d'exploitation",rel:a=>a.K2==="1"},
  {id:"K4",t:"one",l:"Observation de l'enquêteur : fiabilité des réponses",o:[["1","Fiable"],["2","Moyennement fiable"],["3","Peu fiable"]]},
  {id:"K4t",code:"K4b",t:"textarea",l:"Remarques de l'enquêteur",req:false}
 ]}
@@ -291,7 +301,7 @@ const PHY_LISTS={E3m:["E3ml","E3a","Maladie","maladie",{un:"une",le:"la",ce:"cet
 const CULT_FIELDS=[
  ["D1","Culture","one",CULTURES],["D1p","Préciser la culture","text"],["D2","Mode","one",[["1","Serre"],["2","Plein champ"]]],["D3","Superficie (ha)","dec",0.01,1000],["D4","Nombre de cycles","int",1,4],
  ["D5","Production totale (t)","dec",0,100000],["D6","Quantité vendue (t)","dec",0,100000],["D7","Prix moyen de vente à la ferme (DH / t)","dec",0,1000000],
- ["D8","Circuit principal","one",[["1","Vente sur pied"],["2","Station de conditionnement"],["3","Intermédiaire (après récolte)"],["4","Marché de gros"],["5","Coopérative / agrégateur"],["6","Autoconsommation"],["7","Autre"]]],["D9","Rendement en année normale (t / ha)","dec",0,1000],
+ ["D8","Circuit principal","one",[["1","Vente sur pied"],["2","Station de conditionnement"],["3","Intermédiaire (après récolte)"],["4","Marché de gros"],["5","Coopérative / agrégateur"],["6","Autoconsommation"],["7","Autre"]]],["D8p","Préciser le circuit","text"],["D9","Rendement en année normale (t / ha)","dec",0,1000],
  // Charges par ha : E1 et E4 en quantité (q) × prix (p) ; E2 et E3 en listes (engrais, traitements) ; autres postes en DH/ha
  ["E1q","E1 Semences et plants : quantité par ha","dec",0,1e7],["E1u","E1 Unité","one",[["kg","kg"],["u","plants / unités"]]],["E1p","E1 Prix unitaire (DH / unité)","dec",0,1e6],
  ["E2","E2 Engrais utilisés sur cette culture ?","one",YN],
@@ -308,8 +318,8 @@ const CULT_FIELDS=[
 const ELV_FIELDS=[
  ["L1","Effectif actuel (têtes ou ruches)","int",0,1000000],
  ["L2","Production de la campagne (quantité)","dec",0,1e9],["L2u","Unité de la production","one",UNITES_L],
- ["L3","Produits vendus : quantité (même unité)","dec",0,1e9],["L4","Produits vendus : prix moyen (DH / unité)","dec",0,1e6],["L5","Produits vendus : circuit principal","one",CIRCUITS_L],
- ["L6","Animaux vendus : nombre","int",0,1000000],["L7","Animaux vendus : valeur totale (DH)","dec",0,1e9],["L8","Animaux vendus : circuit principal","one",CIRCUITS_L],
+ ["L3","Produits vendus : quantité (même unité)","dec",0,1e9],["L4","Produits vendus : prix moyen (DH / unité)","dec",0,1e6],["L5","Produits vendus : circuit principal","one",CIRCUITS_L],["L5pr","Préciser le circuit","text"],
+ ["L6","Animaux vendus : nombre","int",0,1000000],["L7","Animaux vendus : valeur totale (DH)","dec",0,1e9],["L8","Animaux vendus : circuit principal","one",CIRCUITS_L],["L8pr","Préciser le circuit","text"],
  ["L9q","L9 Aliments achetés : quantité (qx)","dec",0,1e6],["L9p","L9 Prix moyen (DH / qx)","dec",0,1e4],
  ["L10","L10 Frais vétérinaires et insémination (DH)","dec",0,1e9],
  ["L11","L11 Traitements : déparasitage, désinfection (DH)","dec",0,1e9],
@@ -515,7 +525,8 @@ function checkCultures(f){
  const e={};const cs=f.cult||[];
  if(f.nCult==null)e._n="Indiquer le nombre de cultures principales.";
  cs.forEach((c,i)=>{CULT_FIELDS.forEach(([k,l,t,o1,o2])=>{
-   if(k==="D1p"&&c.D1!=="23")return;
+   if(k==="D1p"&&!D1_AUTRE.includes(c.D1))return;
+   if(k==="D8p"&&c.D8!=="7")return;
    if(/^E\d+[up]$/.test(k)&&!(num(c[k.slice(0,-1)+"q"])>0))return;
    const m=fieldErr(t,c[k],o1,o2);if(m)e[i+"."+k]=m});
   if(num(c.D6)>num(c.D5))e[i+".D6"]="Dépasse la production";
@@ -539,8 +550,10 @@ function checkElevage(f){
  ks.forEach(k=>{const x=el[k];
   if(k==="autre"&&emptyVal(x.Lp))e[k+".Lp"]="Obligatoire";
   ELV_FIELDS.forEach(([fk,l,t,o1,o2])=>{
-   if((fk==="L4"||fk==="L5")&&!(num(x.L3)>0))return;
-   if((fk==="L7"||fk==="L8")&&!(num(x.L6)>0))return;
+   if((fk==="L4"||fk==="L5"||fk==="L5pr")&&!(num(x.L3)>0))return;
+   if(fk==="L5pr"&&x.L5!=="8")return;
+   if(fk==="L8pr"&&x.L8!=="8")return;
+   if((fk==="L7"||fk==="L8"||fk==="L8pr")&&!(num(x.L6)>0))return;
    if(/^L\d+[up]$/.test(fk)&&!(num(x[fk.slice(0,-1)+"q"])>0))return;
    const m=fieldErr(t,x[fk],o1,o2);if(m)e[k+"."+fk]=m});
   if(num(x.L3)>num(x.L2)&&x.L2u!=="t")e[k+".L3"]="Dépasse la production";
@@ -601,7 +614,7 @@ function renderCultures(f){
  [0,1,2,3,4,5,6,7,8,9,10,11,12].forEach(k=>h+=`<label class="chip${n===k?" on":""}"><input type="radio" name="nCult" value="${k}" ${n===k?"checked":""} data-ncult="1">${k}</label>`);
  h+=`</div>${S.errors._n?`<div class="err-msg">${esc(S.errors._n)}</div>`:""}<div class="hint">Quantités en tonnes. Charges par hectare de la culture : E1 et E4 en quantité et prix ; engrais et traitements un par un ; autres postes en DH/ha (0 si le poste n'existe pas).</div><datalist id="dl-eng">${ENGRAIS_SUG.map(x=>`<option value="${esc(x)}">`).join("")}</datalist></div>`;
  (f.cult||[]).forEach((c,i)=>{
-  const D=CULT_FIELDS.filter(x=>x[0][0]==="D").filter(x=>!(x[0]==="D1p"&&c.D1!=="23"));
+  const D=CULT_FIELDS.filter(x=>x[0][0]==="D").filter(x=>!(x[0]==="D1p"&&!D1_AUTRE.includes(c.D1))&&!(x[0]==="D8p"&&c.D8!=="7"));
   const E=CULT_FIELDS.filter(x=>x[0][0]==="E");
   const k=cultCalc(c);
   h+=`<div class="card"><h3><span class="code">Culture ${i+1}</span>${esc((CULTURES.find(x=>x[0]===c.D1)||[,""])[1]||"à choisir")}</h3>
@@ -670,8 +683,8 @@ function renderElevage(f){
   h+=`<div class="card"><h3><span class="code">Activité</span>${esc(l)}</h3>
    ${k==="autre"?`<div class="inline">${fld(`e-${k}-Lp`,"Préciser l'activité","text",null,x.Lp,S.errors[k+".Lp"],`data-e="${k}" data-f="Lp"`)}</div>`:""}
    <div class="eyebrow" style="margin-top:10px">Effectif et production</div><div class="inline">${F(["L1","L2","L2u"])}</div>
-   <div class="eyebrow" style="margin-top:12px">Ventes de produits (lait, œufs, miel, laine)</div><div class="inline">${F(["L3","L4","L5"])}</div>
-   <div class="eyebrow" style="margin-top:12px">Ventes d'animaux</div><div class="inline">${F(["L6","L7","L8"])}</div>
+   <div class="eyebrow" style="margin-top:12px">Ventes de produits (lait, œufs, miel, laine)</div><div class="inline">${F(["L3","L4","L5"].concat(x.L5==="8"?["L5pr"]:[]))}</div>
+   <div class="eyebrow" style="margin-top:12px">Ventes d'animaux</div><div class="inline">${F(["L6","L7","L8"].concat(x.L8==="8"?["L8pr"]:[]))}</div>
    <div class="eyebrow" style="margin-top:12px">Charges de l'activité sur la campagne : quantité × prix unitaire</div>${qpRows(ELV_FIELDS.filter(z=>/^L(9|1[0-3])/.test(z[0])),x,`e-${k}`,k+".",`data-e="${k}"`,"DH")}
    <div class="calc" style="margin-top:8px">Ventes : ${fmt(c.ventes)} DH · charges : ${fmt(c.ci+c.mo)} DH · marge brute : ${fmt(c.mb)} DH</div></div>`;
  });
