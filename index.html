@@ -175,6 +175,7 @@ const MODULES=[
  {id:"A1",t:"one",l:"Le répondant est-il le chef d'exploitation ?",o:[["1","Oui"],["2","Non, gérant"],["3","Non, membre de la famille"]]},
  {id:"A1b",t:"text",l:"Nom et prénom du chef d'exploitation"},
  {id:"A1c",t:"text",l:"Nom et prénom du répondant",rel:a=>a.A1==="2"||a.A1==="3"},
+ {id:"A1d",t:"text",l:"N° de CIN du chef d'exploitation (facultatif)",req:false},
  {id:"A2",t:"one",l:"Sexe du chef d'exploitation",o:[["1","Homme"],["2","Femme"]]},
  {id:"A3",t:"int",l:"Âge du chef d'exploitation",u:"ans",min:15,max:100},
  {id:"A4",t:"one",l:"Niveau d'instruction",o:[["0","Aucun"],["1","Coranique / alphabétisation"],["2","Primaire"],["3","Secondaire"],["4","Supérieur"]]},
@@ -236,7 +237,7 @@ const MODULES=[
 ]},
 {id:"mG",code:"G",title:"Conseil, information et avertissement",min:3,qs:[
  {id:"G1",t:"multi",l:"Au cours des 12 derniers mois, avez-vous reçu des conseils techniques ? De qui ?",o:[["0","Aucun"],["1","ONCA / CCA"],["2","ORMVASM"],["3","Fournisseur d'intrants"],["4","Station / exportateur"],["5","Coopérative / association"],["6","Autre agriculteur"],["7","Internet / réseaux sociaux"]],ex:["0"]},
- {id:"G2",t:"one",l:"Êtes-vous satisfait des conseils reçus ?",o:[["1","Très satisfait"],["2","Satisfait"],["3","Peu satisfait"],["4","Pas satisfait"]],rel:a=>(a.G1||[]).length>0&&!has(a.G1,"0")},
+ {id:"G2",t:"one",l:"Êtes-vous satisfait des conseils reçus de l'ONCA (conseiller agricole / CCA) ?",o:[["1","Très satisfait"],["2","Satisfait"],["3","Peu satisfait"],["4","Pas satisfait"]],rel:a=>has(a.G1,"1")},
  {id:"G3",t:"one",l:"Recevez-vous des informations ou alertes (météo, irrigation, maladies) ?",o:[["1","Oui, régulièrement"],["2","Oui, parfois"],["3","Non"]]},
  {id:"G4",t:"multi",l:"Par quel moyen ?",o:[["1","SMS"],["2","WhatsApp écrit"],["3","WhatsApp vocal"],["4","Appel"],["5","Application"],["6","Réunion"],["7","Radio / télévision"]],rel:a=>a.G3==="1"||a.G3==="2"},
  {id:"G5",t:"one",l:"La dernière fois, avez-vous modifié votre irrigation ou un traitement après une alerte ?",o:YN,rel:a=>a.G3==="1"||a.G3==="2"},
@@ -272,7 +273,8 @@ const MODULES=[
  {id:"J8",t:"one",l:"Des personnes de moins de 18 ans travaillent-elles sur l'exploitation contre rémunération ?",o:YN},
  {id:"J9",t:"one",l:"Un accident lié au travail agricole est-il survenu au cours des 12 derniers mois ?",o:YN}
 ]},
-{id:"mK",code:"K",title:"Financement et clôture",min:1,qs:[
+{id:"mK",code:"K",title:"Charges fixes, financement et clôture",min:2,qs:[
+ {id:"K0",t:"group",l:"Charges fixes de l'exploitation sur la campagne 2025-2026 (DH, 0 si aucune)",h:"Charges non affectées à une culture ou à une activité d'élevage. Ne pas recompter ce qui a déjà été déclaré aux modules E et L.",f:[["loyer","Loyer des terres louées",0,1e8],["assur","Assurance agricole",0,1e8],["inter","Intérêts des crédits",0,1e8],["entret","Entretien et réparations : serres, matériel, réseau d'irrigation",0,1e8],["cotis","Cotisations : AUEA, coopérative, association",0,1e8],["autre","Autres charges fixes",0,1e8]]},
  {id:"K1",t:"multi",l:"Au cours des 3 dernières années, avez-vous obtenu ou souscrit…",o:[["0","Rien"],["1","Crédit bancaire ou de microfinance"],["2","Subvention FDA (hors goutte-à-goutte)"],["3","Autre aide publique"],["4","Assurance agricole (multirisque climatique)"]],ex:["0"]},
  {id:"K2",t:"one",l:"Acceptez-vous d'être recontacté chaque année pour cette enquête ?",o:YN},
  {id:"K3",t:"tel",l:"Téléphone de contact",rel:a=>a.K2==="1"},
@@ -404,14 +406,16 @@ function derive(f){
  const vol=volume(a),vaT=ok?va+vaE:null;
  const b1=num(a.B1),b6=num(a.B6);
  const mode=b1&&b6!=null?(b6/b1>0.5?"sous serre":"plein champ"):"—";
+ const k0=a.K0||{},cf=["loyer","assur","inter","entret","cotis","autre"].reduce((t,k)=>t+(num(k0[k])||0),0);
+ const emb=cs.reduce((t,c)=>t+(num(c.D3)||0)*(num(c.D4)||1),0),b3=num(a.B3);
  return{vol:vol.v,volSrc:vol.src,valProd:ok?pb:null,va:vaT,marge:ok?vaT-mo-moE:null,prodEau:ok&&vol.v?vaT/vol.v:null,
-  consoHa:vol.v&&num(a.B3)?vol.v/num(a.B3):null,mode,classe:classeOf(a.B1),
+  consoHa:vol.v&&num(a.B3)?vol.v/num(a.B3):null,mode,chargesFixes:cf,revenuNet:ok?vaT-mo-moE-cf:null,intens:b3&&cs.length?emb/b3*100:null,classe:classeOf(a.B1),
   nonExpl:num(a.supTot)&&b1!=null?(num(a.supTot)-b1)/num(a.supTot):null,
   F4:(has(a.C7,"3")||has(a.C7,"4"))?"1":"2",F8:a.C8==="1"?"1":"2",
   F12:(cs.some(c=>c.D8==="5")||a.H2==="1"||a.H4==="1"||a.H4==="2")?"1":"2"};
 }
 const cod=v=>typeof v==="string"&&/^\d{1,6}$/.test(v)?Number(v):(v??""); // codes de réponse en nombres
-const PRIV=["A1b","A1c","K3"]; // noms et téléphone : onglet Contacts uniquement
+const PRIV=["A1b","A1c","A1d","K3"]; // noms et téléphone : onglet Contacts uniquement
 // Tables à plat pour le classeur
 function flatten(s){
  const d=derive(s);
@@ -426,7 +430,7 @@ function flatten(s){
   else if(q.t==="one")r[q.id]=cod(x);
   else r[q.id]=x??""}));
  r.nb_cultures=(s.cult||[]).length;r.activites_elevage=Object.keys(s.elv||{}).join(" ");
- Object.assign(r,{calc_volume_m3:d.vol,calc_source_volume:d.volSrc,calc_valeur_production_cultures:d.valProd,calc_valeur_ajoutee:d.va,calc_marge_brute:d.marge,calc_productivite_eau_DH_m3:d.prodEau,calc_conso_m3_ha:d.consoHa,calc_mode_production:d.mode,calc_part_non_exploitee:d.nonExpl,F4:cod(d.F4),F8:cod(d.F8),F12:cod(d.F12)});
+ Object.assign(r,{calc_volume_m3:d.vol,calc_source_volume:d.volSrc,calc_valeur_production_cultures:d.valProd,calc_valeur_ajoutee:d.va,calc_marge_brute:d.marge,calc_productivite_eau_DH_m3:d.prodEau,calc_conso_m3_ha:d.consoHa,calc_charges_fixes_DH:d.chargesFixes,calc_revenu_agricole_net_DH:d.revenuNet,calc_taux_intensification_pct:d.intens,calc_mode_production:d.mode,calc_part_non_exploitee:d.nonExpl,F4:cod(d.F4),F8:cod(d.F8),F12:cod(d.F12)});
  const base=i=>({id_questionnaire:s.id,id_exploitation:s.a.idExpl,strate:cod(s.a.strate),classe:cod(classeOf(s.a.B1)),rang:i+1});
  const cult=(s.cult||[]).map((c,i)=>{const k=cultCalc(c),row=base(i);
   CULT_FIELDS.forEach(([f,,t])=>row[f]=t==="dec"||t==="int"?num(c[f]):t==="one"?(/^E\d+u$/.test(f)?(c[f]||""):cod(c[f])):(c[f]||""));
@@ -445,7 +449,7 @@ function flatten(s){
   if(c.E2==="1")(c.E2l||[]).forEach(x=>put("engrais","",x.t,x));
   Object.keys(PHY_LISTS).forEach(y=>{if(c[y]==="1")(c[PHY_LISTS[y][0]]||[]).forEach(m=>(m.tr||[]).forEach(x=>put(PHY_LISTS[y][3],m.m||"",x.n,x)))})});
  if(s.status!=="complet")intr.length=0;
- const contact={id_questionnaire:s.id,id_exploitation:s.a.idExpl,nom_chef:s.a.A1b||"",nom_repondant:s.a.A1c||"",telephone:s.a.K3||"",commune:s.a.commune||"",douar:s.a.douar||""};
+ const contact={id_questionnaire:s.id,id_exploitation:s.a.idExpl,nom_chef:s.a.A1b||"",nom_repondant:s.a.A1c||"",cin:s.a.A1d||"",telephone:s.a.K3||"",commune:s.a.commune||"",douar:s.a.douar||""};
  return{main:r,cult,elv,intr,contact};
 }
 function dictRows(){
@@ -593,8 +597,8 @@ function fld(id,l,t,o,v,err,data){
  return`<label>${esc(l)}<input type="${t==="text"?"text":"number"}" ${t!=="text"?'inputmode="decimal" step="any"':""} id="${id}" value="${esc(v??"")}" ${data}>${err?`<span class="err-msg">${esc(err)}</span>`:""}</label>`;
 }
 function renderCultures(f){
- const n=f.nCult;let h=`<div class="q"><div class="qt"><span class="code">D0</span>Nombre de cultures principales (dans l'ordre décroissant de superficie, 4 au maximum)</div><div class="choices">`;
- [0,1,2,3,4].forEach(k=>h+=`<label class="chip${n===k?" on":""}"><input type="radio" name="nCult" value="${k}" ${n===k?"checked":""} data-ncult="1">${k}</label>`);
+ const n=f.nCult;let h=`<div class="q"><div class="qt"><span class="code">D0</span>Nombre de cultures (toutes les cultures de l'exploitation, dans l'ordre décroissant de superficie)</div><div class="choices">`;
+ [0,1,2,3,4,5,6,7,8,9,10,11,12].forEach(k=>h+=`<label class="chip${n===k?" on":""}"><input type="radio" name="nCult" value="${k}" ${n===k?"checked":""} data-ncult="1">${k}</label>`);
  h+=`</div>${S.errors._n?`<div class="err-msg">${esc(S.errors._n)}</div>`:""}<div class="hint">Quantités en tonnes. Charges par hectare de la culture : E1 et E4 en quantité et prix ; engrais et traitements un par un ; autres postes en DH/ha (0 si le poste n'existe pas).</div><datalist id="dl-eng">${ENGRAIS_SUG.map(x=>`<option value="${esc(x)}">`).join("")}</datalist></div>`;
  (f.cult||[]).forEach((c,i)=>{
   const D=CULT_FIELDS.filter(x=>x[0][0]==="D").filter(x=>!(x[0]==="D1p"&&c.D1!=="23"));
