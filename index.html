@@ -145,10 +145,17 @@ const ONP=[["1","Oui"],["2","Non"],["3","Pas nécessaire"]];
 const CULTURES=[["1","Tomate"],["2","Tomate cerise"],["3","Poivron"],["4","Haricot vert"],["5","Courgette"],["6","Concombre"],["7","Aubergine"],["8","Melon / pastèque"],["9","Pomme de terre"],["10","Oignon"],["11","Carotte"],["12","Fraise"],["13","Framboise"],["14","Myrtille"],["15","Banane"],["16","Agrumes"],["17","Olivier"],["18","Autre arboriculture"],["19","Maïs fourrager"],["20","Luzerne"],["21","Autre fourrage (bersim, orge…)"],["22","Céréales"],["23","Autre (préciser)"]];
 const FOURRAGES=["19","20","21"];
 const D1_AUTRE=["18","21","23"];
-const ACTIVITES=[["lait","Lait (vaches laitières)"],["viande","Bovins viande"],["ovcap","Ovins / caprins"],["vol","Volailles"],["ruch","Ruches (apiculture)"],["autre","Autre élevage"]];
-const CIRCUITS_L=[["1","COPAG"],["2","Centrale laitière"],["3","Centre de collecte"],["4","Coopérative"],["5","Vente directe"],["6","Transformation à la ferme"],["7","Souk / intermédiaire"],["8","Autre"]];
-const UNITES_L=[["l","litres"],["t","têtes"],["o","œufs"],["kg","kg"]];
-const UNITE_DEF={lait:"l",viande:"t",ovcap:"t",vol:"o",ruch:"kg",autre:"kg"};
+const ACTIVITES=[["lait","Vaches laitières"],["viande","Bovins viande"],["ov","Ovins"],["cap","Caprins"],["vol","Volailles"],["ruch","Ruches (apiculture)"],["autre","Autre élevage"]];
+const EFF_LBL={lait:"Nombre de vaches laitières",viande:"Nombre de bovins (veaux, taurillons, bœufs…)",ov:"Nombre d'ovins",cap:"Nombre de caprins",vol:"Nombre de volailles",ruch:"Nombre de ruches",autre:"Effectif (têtes)"};
+// Produits issus des animaux et ventes d'animaux, par activité (« Autre » et produits à nommer : case Préciser)
+const PRODUITS={lait:[["lait","Lait"],["fum","Fumier"],["aut","Autre"]],viande:[["fum","Fumier"],["aut","Autre"]],ov:[["lait","Lait"],["laine","Laine"],["fum","Fumier"],["aut","Autre"]],cap:[["lait","Lait"],["fum","Fumier"],["aut","Autre"]],vol:[["oeufs","Œufs"],["aut","Autre"]],ruch:[["miel","Miel"],["pollen","Pollen"],["propolis","Propolis"],["gelee","Gelée royale"],["aut","Autre"]],autre:[["x1","Produit 1 (à nommer)"],["x2","Produit 2 (à nommer)"],["aut","Autre"]]};
+const ANIMAUX={lait:[["ref","Vaches de réforme"],["aut","Autre"]],viande:[["boeuf","Bœuf"],["veau","Veau"],["taur","Taurillon"],["gen","Génisse"],["aut","Autre"]],ov:[["belier","Bélier"],["brebis","Brebis"],["agneau","Agneau"],["aut","Autre"]],cap:[["bouc","Bouc"],["chevre","Chèvre"],["chevreau","Chevreau"],["aut","Autre"]],vol:[["pond","Poules pondeuses"],["chair","Poulets de chair"],["aut","Autre"]],ruch:[["ruche","Ruches"],["essaim","Essaims"],["aut","Autre"]],autre:[["x1","Catégorie 1 (à nommer)"],["x2","Catégorie 2 (à nommer)"],["aut","Autre"]]};
+const U_GEN=[["l","litres"],["kg","kg"],["t","tonnes"],["n","nombre"],["u","autre unité"]];
+const PROD_U={lait:[["l","litres"]],fum:[["rem","remorques"],["t","tonnes"]],laine:[["kg","kg"]],oeufs:[["n","nombre d'œufs"],["plat","plateaux de 30"]],miel:[["kg","kg"]],pollen:[["kg","kg"]],propolis:[["kg","kg"],["g","g"]],gelee:[["g","g"],["kg","kg"]]};
+const prodUnits=c=>PROD_U[c]||U_GEN;
+const CIRC_P=[["1","COPAG / centrale laitière"],["3","Centre de collecte"],["4","Coopérative"],["5","Vente directe"],["6","Transformation à la ferme"],["7","Intermédiaire"],["8","Autre"]];
+const CIRC_A=[["1","Souk"],["2","Maquignon / intermédiaire"],["3","Abattoir / boucher"],["4","Autre éleveur"],["5","Coopérative"],["8","Autre"]];
+const needName=c=>c==="aut"||/^x\d$/.test(c);
 
 /* ============================ QUESTIONNAIRE (V6) ============================ */
 // Types : one, multi, int, dec, text, tel, group, grid, rank, textarea, auto. rel(a) = filtre ; ex = codes exclusifs.
@@ -210,7 +217,8 @@ const MODULES=[
  {id:"C5",code:"C5v",t:"group",l:"Débit × heures par jour × jours d'irrigation",f:[["debit","Débit (m³/h)",0,500],["h","Heures / jour",0,24],["j","Jours sur la campagne",0,366]],dec:true,rel:a=>a.C4c==="3"&&a.C5c==="1"},
  {id:"C6",t:"dec",l:"Estimation du volume par l'exploitant",u:"m³",min:0,max:5000000,nsp:true,h:"Cocher « Ne sait pas » si aucune estimation n'est possible.",rel:a=>a.C4c==="3"&&a.C5c==="2"},
  {id:"C6b",t:"group",l:"Repère de secours",f:[["hs","Heures d'irrigation / semaine en pointe",0,168],["mois","Mois d'irrigation",0,12],["cv","Puissance pompe (CV)",0,500]],dec:true,req:false,rel:a=>a.C4c==="3"&&a.C5c==="2"&&a.C6==="NSP"},
- {id:"C7",t:"multi",l:"Comment décidez-vous quand et combien irriguer ?",o:[["1","Habitude"],["2","Observation du sol / de la plante"],["3","Tensiomètre / sonde"],["4","Calcul selon l'ETP / météo"],["5","Conseil d'un technicien"],["6","Alerte reçue (SMS, application)"],["7","Tour d'eau imposé"]]},
+ {id:"C7",t:"multi",l:"Comment décidez-vous quand et combien irriguer ?",o:[["1","Habitude"],["2","Observation du sol / de la plante"],["3","Tensiomètre / sonde"],["4","Calcul selon l'ETP / météo"],["5","Conseil d'un technicien"],["6","Alerte reçue (SMS, application)"],["7","Tour d'eau imposé"],["8","Autre"]]},
+ {id:"C7p",t:"text",l:"Préciser l'autre façon de décider",rel:a=>has(a.C7,"8")},
  {id:"C8",t:"one",l:"Pratiquez-vous la fertigation ?",o:[["1","Oui, selon un programme"],["2","Oui, sans programme"],["3","Non"]],rel:a=>num(a.B4)>0},
  {id:"C9",t:"multi",l:"Au cours des 3 dernières campagnes, avez-vous constaté…",o:[["1","Baisse du niveau du puits"],["2","Eau plus salée"],["3","Coupures ou restrictions d'eau"],["4","Aucun changement"]],ex:["4"],rel:a=>has(a.C1,"1")||has(a.C1,"2")},
  {id:"C10",t:"grid",l:"Êtes-vous satisfait de l'eau d'irrigation dont vous disposez ?",rows:[["qte","En quantité"],["qual","En qualité"]],o:[["1","Très satisfait"],["2","Satisfait"],["3","Peu satisfait"],["4","Pas satisfait"]]},
@@ -219,7 +227,7 @@ const MODULES=[
  {id:"C12p",t:"text",l:"Préciser l'autre devenir des saumures",rel:a=>(has(a.C1,"1")||has(a.C1,"2"))&&(a.C11==="1"||a.C11==="2")&&has(a.C12,"7")}
 ]},
 {id:"mD",code:"D–E",title:"Cultures, production et charges",min:17,custom:"cultures"},
-{id:"mL",code:"L",title:"Élevage",min:4,rel:a=>a.B9==="1",custom:"elevage",qs:[
+{id:"mL",code:"L",title:"Élevage",min:6,rel:a=>a.B9==="1",custom:"elevage",qs:[
  {id:"L14",t:"int",l:"Part des cultures fourragères du module D consommée par le troupeau",u:"%",min:0,max:100,rel:a=>(a._cult||[]).some(c=>FOURRAGES.includes(c.D1))},
  {id:"L15",t:"multi",l:"Pratiques d'alimentation",o:[["1","Ensilage"],["2","Orge hydroponique"],["3","Rationnement calculé"],["4","Autre"],["0","Aucune"]],ex:["0"]},
  {id:"L15p",t:"text",l:"Préciser l'autre pratique d'alimentation",rel:a=>has(a.L15,"4")}
@@ -242,7 +250,8 @@ const MODULES=[
  {id:"F18",t:"one",l:"Élevage – registre d'élevage (identification, naissances, traitements)",o:ONP,dom:"D7",rel:a=>a.B9==="1"}
 ]},
 {id:"mG",code:"G",title:"Conseil, information et avertissement",min:3,qs:[
- {id:"G1",t:"multi",l:"Au cours des 12 derniers mois, avez-vous reçu des conseils techniques ? De qui ?",o:[["0","Aucun"],["1","ONCA / CCA"],["2","ORMVASM"],["3","Fournisseur d'intrants"],["4","Station / exportateur"],["5","Coopérative / association"],["6","Autre agriculteur"],["7","Internet / réseaux sociaux"]],ex:["0"]},
+ {id:"G1",t:"multi",l:"Au cours des 12 derniers mois, avez-vous reçu des conseils techniques ? De qui ?",o:[["0","Aucun"],["1","ONCA / CCA"],["2","ORMVASM"],["3","Fournisseur d'intrants"],["4","Station / exportateur"],["5","Coopérative / association"],["6","Autre agriculteur"],["7","Internet / réseaux sociaux"],["8","Autre"]],ex:["0"]},
+ {id:"G1p",t:"text",l:"Préciser l'autre source de conseil",rel:a=>has(a.G1,"8")},
  {id:"G2",t:"one",l:"Êtes-vous satisfait des conseils reçus de l'ONCA (conseiller agricole / CCA) ?",o:[["1","Très satisfait"],["2","Satisfait"],["3","Peu satisfait"],["4","Pas satisfait"]],rel:a=>has(a.G1,"1")},
  {id:"G3",t:"one",l:"Recevez-vous des informations ou alertes (météo, irrigation, maladies) ?",o:[["1","Oui, régulièrement"],["2","Oui, parfois"],["3","Non"]]},
  {id:"G4",t:"multi",l:"Par quel moyen ?",o:[["1","SMS"],["2","WhatsApp écrit"],["3","WhatsApp vocal"],["4","Appel"],["5","Application"],["6","Réunion"],["7","Radio / télévision"]],rel:a=>a.G3==="1"||a.G3==="2"},
@@ -258,8 +267,9 @@ const MODULES=[
  {id:"H2",t:"one",l:"Êtes-vous engagé dans un projet d'agrégation ?",o:YN},
  {id:"H2b",t:"one",l:"Êtes-vous agrégateur ou agrégé ?",o:[["1","Agrégateur"],["2","Agrégé"]],rel:a=>a.H2==="1"},
  {id:"H3",t:"one",l:"Filière concernée",o:CULTURES,rel:a=>a.H2==="1"},
- {id:"H3a",code:"H3b",t:"text",l:"Partenaire (agrégateur ou agrégés)",req:false,rel:a=>a.H2==="1"},
- {id:"H4",t:"one",l:"Avez-vous une alliance commerciale avec des acheteurs (station, exportateur, industriel, grande distribution) ?",o:[["1","Oui, contrat écrit"],["2","Oui, accord verbal"],["3","Non"]]}
+ {id:"H3a",code:"H3b",t:"text",l:"Nom de l'agrégateur",rel:a=>a.H2==="1"&&a.H2b==="2"},
+ {id:"H4",t:"one",l:"Avez-vous une alliance commerciale avec des acheteurs (station, exportateur, industriel, grande distribution) ?",o:[["1","Oui, contrat écrit"],["2","Oui, accord verbal"],["3","Non"]]},
+ {id:"H4p",t:"text",l:"Nom de l'acheteur",rel:a=>a.H4==="1"||a.H4==="2"}
 ]},
 {id:"mI",code:"I",title:"Climat et adaptation",min:4,qs:[
  {id:"I1",t:"multi",l:"Au cours des 3 dernières campagnes, quels événements ont réduit votre production ?",o:[["0","Aucun"],["1","Manque d'eau"],["2","Forte chaleur"],["3","Froid / gel"],["4","Vent / tempête"],["5","Inondation / grêle"],["6","Maladie ou ravageur grave"],["7","Autre"]],ex:["0"]},
@@ -287,15 +297,15 @@ const MODULES=[
  {id:"J4",t:"multi",l:"Équipement porté pendant les traitements",o:[["0","Aucun"],["1","Masque"],["2","Gants"],["3","Combinaison"],["4","Lunettes"]],ex:["0"],rel:a=>a.J3&&a.J3!=="4"},
  {id:"J5",t:"one",l:"Où sont stockés les produits phytosanitaires ?",o:[["1","Local fermé réservé"],["2","Dans la maison"],["3","À l'air libre"],["4","Pas de stock"],["5","Autre"]]},
  {id:"J5p",t:"text",l:"Préciser l'autre lieu de stockage",rel:a=>a.J5==="5"},
- {id:"J6",t:"one",l:"Que faites-vous des emballages vides ?",o:[["1","Collectés / rendus au fournisseur"],["2","Brûlés"],["3","Enfouis"],["4","Jetés"],["5","Réutilisés"],["6","Autre"]]},
+ {id:"J6",t:"one",l:"Que faites-vous des emballages vides ?",o:[["7","Vendus aux sociétés de recyclage"],["1","Collectés / rendus au fournisseur"],["2","Brûlés"],["3","Enfouis"],["4","Jetés"],["5","Réutilisés"],["6","Autre"]]},
  {id:"J6p",t:"text",l:"Préciser ce qui est fait des emballages",rel:a=>a.J6==="6"},
- {id:"J7",t:"one",l:"Que faites-vous des plastiques usagés (serre, paillage, goutteurs) ?",o:[["1","Collectés / rendus au fournisseur"],["2","Brûlés"],["3","Enfouis"],["4","Jetés"],["5","Réutilisés"],["6","Autre"]]},
+ {id:"J7",t:"one",l:"Que faites-vous des plastiques usagés (serre, paillage, goutteurs) ?",o:[["7","Vendus aux sociétés de recyclage"],["1","Collectés / rendus au fournisseur"],["2","Brûlés"],["3","Enfouis"],["4","Jetés"],["5","Réutilisés"],["6","Autre"]]},
  {id:"J7p",t:"text",l:"Préciser ce qui est fait des plastiques",rel:a=>a.J7==="6"},
  {id:"J8",t:"one",l:"Des personnes de moins de 18 ans travaillent-elles sur l'exploitation contre rémunération ?",o:YN},
  {id:"J9",t:"one",l:"Un accident lié au travail agricole est-il survenu au cours des 12 derniers mois ?",o:YN}
 ]},
 {id:"mK",code:"K",title:"Charges fixes, financement et clôture",min:2,qs:[
- {id:"K0",t:"group",l:"Charges fixes de l'exploitation sur la campagne 2025-2026 (DH, 0 si aucune)",h:"Charges non affectées à une culture ou à une activité d'élevage. Ne pas recompter ce qui a déjà été déclaré aux modules E et L.",f:[["loyer","Loyer des terres louées",0,1e8],["assur","Assurance agricole",0,1e8],["inter","Intérêts des crédits",0,1e8],["entret","Entretien et réparations : serres, matériel, réseau d'irrigation",0,1e8],["cotis","Cotisations : AUEA, coopérative, association",0,1e8],["autre","Autres charges fixes",0,1e8]]},
+ {id:"K0",t:"group",l:"Charges fixes de l'exploitation sur la campagne 2025-2026 (DH, 0 si aucune)",h:"Charges non affectées à une culture ou à une activité d'élevage. Ne pas recompter ce qui a déjà été déclaré aux modules E et L.",f:[["loyer","Loyer des terres louées",0,1e8],["assur","Assurance agricole",0,1e8],["inter","Intérêts des crédits",0,1e8],["cotis","Cotisations : AUEA, coopérative, association",0,1e8],["autre","Autres charges fixes",0,1e8]]},
  {id:"K0p",t:"text",l:"Préciser les autres charges fixes",rel:a=>num((a.K0||{}).autre)>0},
  {id:"K1",t:"multi",l:"Au cours des 3 dernières années, avez-vous obtenu ou souscrit…",o:[["0","Rien"],["1","Crédit bancaire ou de microfinance"],["2","Subvention FDA (hors goutte-à-goutte)"],["3","Autre aide publique"],["4","Assurance agricole (multirisque climatique)"]],ex:["0"]},
  {id:"K1p",t:"text",l:"Préciser l'autre aide publique",rel:a=>has(a.K1,"3")},
@@ -312,15 +322,15 @@ const ENGRAIS_SUG=["NPK","Ammonitrate","Urée","Sulfate d'ammonium","Nitrate de 
 const PHY_LISTS={E3m:["E3ml","E3a","Maladie","maladie",{un:"une",le:"la",ce:"cette"}],E3r:["E3rl","E3b","Ravageur","ravageur",{un:"un",le:"le",ce:"ce"}]};
 // Cultures (module D–E) : [clé, libellé, type, min|options, max]
 const CULT_FIELDS=[
- ["D1","Culture","one",CULTURES],["D1p","Préciser la culture","text"],["D2","Mode","one",[["1","Serre"],["2","Plein champ"]]],["D3","Superficie (ha)","dec",0.01,1000],["D4","Nombre de cycles","int",1,4],
+ ["D1","Culture","one",CULTURES],["D1p","Préciser la culture","text"],["D2","Mode","one",[["1","Serre"],["2","Plein champ"]]],["D3","Superficie (ha)","dec",0.01,1000],["D4","Nombre de cycles","int",1,4],["D9","Rendement en année normale (t / ha)","dec",0,1000],
  ["D5","Production totale (t)","dec",0,100000],["D6","Quantité vendue (t)","dec",0,100000],["D7","Prix moyen de vente à la ferme (DH / t)","dec",0,1000000],
- ["D8","Circuit principal","one",[["1","Vente sur pied"],["2","Station de conditionnement"],["3","Intermédiaire (après récolte)"],["4","Marché de gros"],["5","Coopérative / agrégateur"],["6","Autoconsommation"],["7","Autre"]]],["D8p","Préciser le circuit","text"],["D9","Rendement en année normale (t / ha)","dec",0,1000],
+ ["D8","Circuit principal","one",[["1","Vente sur pied"],["2","Station de conditionnement"],["3","Intermédiaire (après récolte)"],["4","Marché de gros"],["5","Coopérative / agrégateur"],["6","Autoconsommation"],["7","Autre"]]],["D8p","Préciser le circuit","text"],
  // Charges par ha : E1 et E4 en quantité (q) × prix (p) ; E2 et E3 en listes (engrais, traitements) ; autres postes en DH/ha
  ["E1q","E1 Semences et plants : quantité par ha","dec",0,1e7],["E1u","E1 Unité","one",[["kg","kg"],["u","plants / unités"]]],["E1p","E1 Prix unitaire (DH / unité)","dec",0,1e6],
  ["E2","E2 Engrais utilisés sur cette culture ?","one",YN],
  ["E3m","E3a Maladies sur cette culture pendant la campagne ?","one",YN],
  ["E3r","E3b Ravageurs sur cette culture pendant la campagne ?","one",YN],
- ["E4q","E4 Eau d'irrigation : m³ par ha","dec",0,1e6],["E4p","E4 Prix de l'eau (DH / m³)","dec",0,100],
+ ["E4q","E4 Eau d'irrigation : volume total (m³ / ha)","dec",0,1e6],["E4p","E4 Prix de l'eau (DH / m³)","dec",0,100],
  ["E5","E5 Énergie de pompage : électricité, gaz, gasoil (DH / ha)","dec",0,1e7],
  ["E6","E6 Mécanisation – travail du sol (DH / ha)","dec",0,1e7],["E7","E7 Mécanisation – traitements (DH / ha)","dec",0,1e7],
  ["E8","E8 Transport (DH / ha)","dec",0,1e7],["E9","E9 Emballages : caisses, sacs (DH / ha)","dec",0,1e7],
@@ -329,10 +339,7 @@ const CULT_FIELDS=[
 ];
 // Élevage (module L) : une fiche par activité pratiquée
 const ELV_FIELDS=[
- ["L1","Effectif actuel (têtes ou ruches)","int",0,1000000],
- ["L2","Production de la campagne (quantité)","dec",0,1e9],["L2u","Unité de la production","one",UNITES_L],
- ["L3","Produits vendus : quantité (même unité)","dec",0,1e9],["L4","Produits vendus : prix moyen (DH / unité)","dec",0,1e6],["L5","Produits vendus : circuit principal","one",CIRCUITS_L],["L5pr","Préciser le circuit","text"],
- ["L6","Animaux vendus : nombre","int",0,1000000],["L7","Animaux vendus : valeur totale (DH)","dec",0,1e9],["L8","Animaux vendus : circuit principal","one",CIRCUITS_L],["L8pr","Préciser le circuit","text"],
+ ["L1","Effectif actuel (jour de l'enquête)","int",0,1000000],
  ["L9q","L9 Aliments achetés : quantité (qx)","dec",0,1e6],["L9p","L9 Prix moyen (DH / qx)","dec",0,1e4],
  ["L10","L10 Frais vétérinaires et insémination (DH)","dec",0,1e9],
  ["L11","L11 Traitements : déparasitage, désinfection (DH)","dec",0,1e9],
@@ -345,7 +352,7 @@ const ELV_FIELDS=[
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const CFG=window.REDI_CONFIG||{};
 const S={view:"home",user:LS.get("redi_user",null),api:(CFG.API_URL||"").trim()||LS.get("redi_api",""),
- quota:LS.get("redi_quota",{}),quotaAt:LS.get("redi_quotaAt",null),quotaOpen:false,mine:LS.get("redi_mine",[]),mineAt:LS.get("redi_mineAt",null),all:[],
+ quota:LS.get("redi_quota",{}),quotaEnq:LS.get("redi_quotaEnq",null),enqOpen:false,quotaAt:LS.get("redi_quotaAt",null),quotaOpen:false,mine:LS.get("redi_mine",[]),mineAt:LS.get("redi_mineAt",null),all:[],
  outbox:LS.get("redi_outbox",[]),drafts:LS.get("redi_drafts",{}),form:null,mod:0,errors:{},adminTab:"avancement",detail:null,detailSub:null,filter:"",note:"",loading:false};
 const app=document.getElementById("app");
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -372,7 +379,7 @@ async function refresh(quiet){
  S.loading=true;if(!quiet)render();
  try{
   const [qt,m]=await Promise.all([api("quotas"),api("mine")]);
-  S.quota=qt.counts||{};S.quotaAt=Date.now();LS.set("redi_quota",S.quota);LS.set("redi_quotaAt",S.quotaAt);
+  S.quota=qt.counts||{};S.quotaAt=Date.now();LS.set("redi_quota",S.quota);LS.set("redi_quotaAt",S.quotaAt);S.quotaEnq=qt.parEnq||null;LS.set("redi_quotaEnq",S.quotaEnq);
   S.mine=m.items;S.mineAt=Date.now();LS.set("redi_mine",S.mine);LS.set("redi_mineAt",S.mineAt);
   if(isSup()){const s=await api("summary");S.all=s.items}
   S.note="";
@@ -403,33 +410,37 @@ function volume(a){
  return{v:null,src:""};
 }
 // Charges : quantité × prix unitaire (coût calculé)
-const E_QP=["E1","E4"],E_DH=["E5","E6","E7","E8","E9","E10"],L_QP=["L9","L12"];
+const E_QP=["E1"],E_DH=["E5","E6","E7","E8","E9","E10"],L_QP=["L9","L12"];
 const engCost=c=>c.E2==="1"?(c.E2l||[]).reduce((t,x)=>t+(num(x.q)||0)*(num(x.p)||0),0):0;
 const phyCost=(c,y)=>c[y]==="1"?(c[PHY_LISTS[y][0]]||[]).reduce((t,m)=>t+(m.tr||[]).reduce((u,x)=>u+(num(x.q)||0)*(num(x.p)||0),0),0):0;
 const qp=(o,k)=>(num(o[k+"q"])||0)*(num(o[k+"p"])||0);
+// E4 : eau par source cochée en C1 (volume et prix de chaque source si plusieurs sources)
+const srcs=a=>((a&&a.C1)||[]).slice().sort();
+const srcName=(a,k)=>k==="5"&&a&&a.C1p?a.C1p:((findQ("C1").o.find(o=>o[0]===k)||[,k])[1]);
+const waterCost=(c,a)=>{const L=srcs(a);return L.length>=2?L.reduce((t,k)=>t+(num(c["E4v"+k])||0)*(num(c["E4p"+k])||0),0):qp(c,"E4")};
 // Fiche technico-économique d'une culture (par ha puis pour la superficie)
-function cultCalc(c){
+function cultCalc(c,a){
  const s=num(c.D3),q=num(c.D5),p=num(c.D7);
- const ciHa=E_QP.reduce((t,k)=>t+qp(c,k),0)+engCost(c)+phyCost(c,"E3m")+phyCost(c,"E3r")+E_DH.reduce((t,k)=>t+(num(c[k])||0),0),moHa=(num(c.E11)||0)*(num(c.E12)||0);
+ const ciHa=E_QP.reduce((t,k)=>t+qp(c,k),0)+waterCost(c,a)+engCost(c)+phyCost(c,"E3m")+phyCost(c,"E3r")+E_DH.reduce((t,k)=>t+(num(c[k])||0),0),moHa=(num(c.E11)||0)*(num(c.E12)||0);
  const pbHa=q!=null&&p!=null&&s?q*p/s:null;
  return{rdt:q!=null&&s?q/s:null,pbHa,ciHa,moHa,vaHa:pbHa!=null?pbHa-ciHa:null,mbHa:pbHa!=null?pbHa-ciHa-moHa:null,jHa:(num(c.E11)||0)+(num(c.E13)||0),
   pb:pbHa!=null?pbHa*s:null,va:pbHa!=null?(pbHa-ciHa)*s:null,mo:s?moHa*s:0};
 }
 // Fiche technico-économique d'une activité d'élevage (montants de la campagne)
 function elvCalc(e){
- const ventes=(num(e.L3)||0)*(num(e.L4)||0)+(num(e.L7)||0);
+ const vp=Object.values(e.P||{}).reduce((t,x)=>t+(num(x.v)>0?(num(x.v)||0)*(num(x.p)||0):0),0),va=Object.values(e.A||{}).reduce((t,x)=>t+(num(x.n)||0)*(num(x.p)||0),0),ventes=vp+va;
  const ci=qp(e,"L9")+(num(e.L10)||0)+(num(e.L11)||0)+(num(e.L13)||0),mo=qp(e,"L12");
- return{ventes,ci,mo,va:ventes-ci,mb:ventes-ci-mo};
+ return{ventes,ventesProd:vp,ventesAnim:va,ci,mo,va:ventes-ci,mb:ventes-ci-mo};
 }
 function derive(f){
  const a=f.a,cs=f.cult||[],el=f.elv||{};
  let pb=0,va=0,mo=0,ok=true;
- cs.forEach(c=>{const k=cultCalc(c);if(k.va==null)ok=false;else{pb+=k.pb;va+=k.va;mo+=k.mo}});
+ cs.forEach(c=>{const k=cultCalc(c,a);if(k.va==null)ok=false;else{pb+=k.pb;va+=k.va;mo+=k.mo}});
  let vaE=0,moE=0;Object.keys(el).forEach(k=>{const x=elvCalc(el[k]);vaE+=x.va;moE+=x.mo});
  const vol=volume(a),vaT=ok?va+vaE:null;
  const b1=num(a.B1),b6=num(a.B6);
  const mode=b1&&b6!=null?(b6/b1>0.5?"sous serre":"plein champ"):"—";
- const k0=a.K0||{},cf=["loyer","assur","inter","entret","cotis","autre"].reduce((t,k)=>t+(num(k0[k])||0),0);
+ const k0=a.K0||{},cf=["loyer","assur","inter","cotis","autre"].reduce((t,k)=>t+(num(k0[k])||0),0);
  const emb=cs.reduce((t,c)=>t+(num(c.D3)||0)*(num(c.D4)||1),0),b3=num(a.B3);
  return{vol:vol.v,volSrc:vol.src,valProd:ok?pb:null,va:vaT,marge:ok?vaT-mo-moE:null,prodEau:ok&&vol.v?vaT/vol.v:null,
   consoHa:vol.v&&num(a.B3)?vol.v/num(a.B3):null,mode,chargesFixes:cf,revenuNet:ok?vaT-mo-moE-cf:null,intens:b3&&cs.length?emb/b3*100:null,classe:classeOf(a.B1),
@@ -448,24 +459,31 @@ function flatten(s){
   if(q.t==="group")q.f.forEach(([k])=>r[`${q.id}_${k}`]=num((x||{})[k]));
   else if(q.t==="grid")q.rows.forEach(([k])=>r[`${q.id}_${k}`]=cod((x||{})[k]));
   else if(q.t==="multi"){r[q.id]=(x||[]).join(" ");const o=Array.isArray(q.o)?q.o:MODULES[3].qs[0].o;o.forEach(([c])=>r[`${q.id}_${c}`]=x?(x.includes(c)?1:0):null)}
-  else if(q.t==="rank")for(let k=0;k<q.n;k++)r[`${q.id}_${k+1}`]=cod((x||[])[k]);
+  else if(q.t==="rank")for(let k=0;k<q.n;k++){r[`${q.id}_${k+1}`]=cod((x||[])[k]);r[`${q.id}_${k+1}_description`]=(s.a[q.id+"d"]||[])[k]||""}
   else if(q.t==="int"||q.t==="dec")r[q.id]=x==="NSP"?9:num(x);
   else if(q.t==="one")r[q.id]=cod(x);
   else r[q.id]=x??""}));
  r.nb_cultures=(s.cult||[]).length;r.activites_elevage=Object.keys(s.elv||{}).join(" ");
  Object.assign(r,{calc_volume_m3:d.vol,calc_source_volume:d.volSrc,calc_valeur_production_cultures:d.valProd,calc_valeur_ajoutee:d.va,calc_marge_brute:d.marge,calc_productivite_eau_DH_m3:d.prodEau,calc_conso_m3_ha:d.consoHa,calc_charges_fixes_DH:d.chargesFixes,calc_revenu_agricole_net_DH:d.revenuNet,calc_taux_intensification_pct:d.intens,calc_mode_production:d.mode,calc_part_non_exploitee:d.nonExpl,F4:cod(d.F4),F8:cod(d.F8),F12:cod(d.F12)});
  const base=i=>({id_questionnaire:s.id,id_exploitation:s.a.idExpl,strate:cod(s.a.strate),classe:cod(classeOf(s.a.B1)),rang:i+1});
- const cult=(s.cult||[]).map((c,i)=>{const k=cultCalc(c),row=base(i);
+ const cult=(s.cult||[]).map((c,i)=>{const k=cultCalc(c,s.a),row=base(i);
   CULT_FIELDS.forEach(([f,,t])=>row[f]=t==="dec"||t==="int"?num(c[f]):t==="one"?(/^E\d+u$/.test(f)?(c[f]||""):cod(c[f])):(c[f]||""));
   E_QP.forEach(x=>row[`calc_${x}_DH_ha`]=num(c[x+"q"])!=null?qp(c,x):null);
+  ["1","2","3","4","5"].forEach(k=>{const on=srcs(s.a).length>=2&&srcs(s.a).includes(k);row["E4v"+k]=on?num(c["E4v"+k]):null;row["E4p"+k]=on?num(c["E4p"+k]):null});
+  row.calc_E4_DH_ha=num(c.E4q)!=null?waterCost(c,s.a):null;
   row.calc_E2_DH_ha=c.E2?engCost(c):null;row.calc_E3a_maladies_DH_ha=c.E3m?phyCost(c,"E3m"):null;row.calc_E3b_ravageurs_DH_ha=c.E3r?phyCost(c,"E3r"):null;
   row.nb_engrais=c.E2==="1"?(c.E2l||[]).length:0;row.nb_maladies=c.E3m==="1"?(c.E3ml||[]).length:0;row.nb_ravageurs=c.E3r==="1"?(c.E3rl||[]).length:0;
   Object.assign(row,{calc_rendement_t_ha:k.rdt,calc_produit_brut_DH_ha:k.pbHa,calc_conso_intermediaires_DH_ha:k.ciHa,calc_mo_salariee_DH_ha:k.moHa,calc_valeur_ajoutee_DH_ha:k.vaHa,calc_marge_brute_DH_ha:k.mbHa,calc_journees_ha:k.jHa});
   return row});
  const elv=Object.keys(s.elv||{}).map((k,i)=>{const e=s.elv[k],x=elvCalc(e),row=base(i);row.activite=k;row.activite_precision=e.Lp||"";
   ELV_FIELDS.forEach(([f,,t])=>row[f]=t==="dec"||t==="int"?num(e[f]):(e[f]||""));
+  (PRODUITS[k]||[]).forEach(([c])=>{const x=(e.P||{})[c],b="prod_"+c;row[b]=x?1:0;if(!x)return;
+   Object.assign(row,{[b+"_nom"]:x.nom||"",[b+"_unite"]:x.u||"",[b+"_production"]:num(x.q),[b+"_vendu"]:num(x.v),[b+"_prix"]:num(x.v)>0?num(x.p):null,[b+"_circuit"]:num(x.v)>0?cod(x.c):"",[b+"_circuit_prec"]:num(x.v)>0&&x.c==="8"?(x.cp||""):"",
+    ["calc_"+b+"_ventes_DH"]:num(x.v)>0?(num(x.v)||0)*(num(x.p)||0):0,["calc_"+b+"_part_vendue_pct"]:num(x.q)>0&&num(x.v)!=null?num(x.v)/num(x.q)*100:null})});
+  (ANIMAUX[k]||[]).forEach(([c])=>{const x=(e.A||{})[c],b="anim_"+c;row[b]=x?1:0;if(!x)return;
+   Object.assign(row,{[b+"_nom"]:x.nom||"",[b+"_nombre"]:num(x.n),[b+"_prix"]:num(x.p),[b+"_circuit"]:cod(x.c),[b+"_circuit_prec"]:x.c==="8"?(x.cp||""):"",["calc_"+b+"_ventes_DH"]:(num(x.n)||0)*(num(x.p)||0)})});
   L_QP.forEach(y=>row[`calc_${y}_DH`]=num(e[y+"q"])!=null?qp(e,y):null);
-  Object.assign(row,{calc_ventes_DH:x.ventes,calc_charges_hors_mo_DH:x.ci,calc_valeur_ajoutee_DH:x.va,calc_marge_brute_DH:x.mb});
+  Object.assign(row,{calc_ventes_produits_DH:x.ventesProd,calc_ventes_animaux_DH:x.ventesAnim,calc_ventes_DH:x.ventes,calc_charges_hors_mo_DH:x.ci,calc_valeur_ajoutee_DH:x.va,calc_marge_brute_DH:x.mb});
   return row});
  const intr=[];(s.cult||[]).forEach((c,i)=>{const b0=Object.assign(base(i),{culture:cod(c.D1)});
   const put=(poste,cible,prod,x)=>intr.push(Object.assign({},b0,{poste,cible,produit:prod||"",unite:x.u||"",quantite_ha:num(x.q),prix_unitaire:num(x.p),cout_DH_ha:(num(x.q)||0)*(num(x.p)||0)}));
@@ -484,6 +502,13 @@ function dictRows(){
  CULT_FIELDS.concat(ELV_FIELDS).forEach(([k,l,t,o])=>{if(t==="one")o.forEach(([c,ll])=>dict.push({question:k,variable:k,libelle_question:l,code:c,libelle:ll}));else dict.push({question:k,variable:k,libelle_question:l,code:"",libelle:""})});
  UNITES_ENG.concat(UNITES_PHY.filter(x=>!UNITES_ENG.some(y=>y[0]===x[0]))).forEach(([c,l])=>dict.push({question:"E2 / E3",variable:"unite (onglet Intrants)",libelle_question:"Unité de l'engrais ou du traitement",code:c,libelle:l}));
  ACTIVITES.forEach(([c,l])=>dict.push({question:"L0",variable:"activite",libelle_question:"Activité d'élevage",code:c,libelle:l}));
+ ["1","2","3","4","5"].forEach(k=>{dict.push({question:"E4",variable:"E4v"+k,libelle_question:"Volume d'eau de la source C1="+k+" (m³ / ha), si plusieurs sources",code:"",libelle:""});dict.push({question:"E4",variable:"E4p"+k,libelle_question:"Prix unitaire de la source C1="+k+" (DH / m³), si plusieurs sources",code:"",libelle:""})});
+ dict.push({question:"G7",variable:"G7_1_description … G7_3_description",libelle_question:"Description du sujet prioritaire (détails propres à l'exploitant)",code:"",libelle:""});
+ ACTIVITES.forEach(([k,al])=>{(PRODUITS[k]||[]).forEach(([c,l])=>dict.push({question:"L-produits",variable:"prod_"+c,libelle_question:"Produit issu des animaux ("+al+") : coché 1 / 0 ; puis _nom, _unite, _production, _vendu, _prix (DH / unité), _circuit, _circuit_prec",code:c,libelle:l}));
+  (ANIMAUX[k]||[]).forEach(([c,l])=>dict.push({question:"L-animaux",variable:"anim_"+c,libelle_question:"Animaux vendus ("+al+") : coché 1 / 0 ; puis _nom, _nombre, _prix (DH / tête), _circuit, _circuit_prec",code:c,libelle:l}))});
+ Object.entries(PROD_U).concat([["autres",U_GEN]]).forEach(([c,U])=>U.forEach(([u,l])=>dict.push({question:"L-produits",variable:"prod_"+c+"_unite",libelle_question:"Unité",code:u,libelle:l})));
+ CIRC_P.forEach(([c,l])=>dict.push({question:"L-produits",variable:"prod_*_circuit",libelle_question:"Circuit principal de vente du produit",code:c,libelle:l}));
+ CIRC_A.forEach(([c,l])=>dict.push({question:"L-animaux",variable:"anim_*_circuit",libelle_question:"Circuit principal de vente des animaux",code:c,libelle:l}));
  return dict;
 }
 
@@ -540,9 +565,12 @@ function checkCultures(f){
  cs.forEach((c,i)=>{CULT_FIELDS.forEach(([k,l,t,o1,o2])=>{
    if(k==="D1p"&&!D1_AUTRE.includes(c.D1))return;
    if(k==="D8p"&&c.D8!=="7")return;
+   if(k==="E4p"&&srcs(f.a).length>=2)return;
    if(/^E\d+[up]$/.test(k)&&!(num(c[k.slice(0,-1)+"q"])>0))return;
    const m=fieldErr(t,c[k],o1,o2);if(m)e[i+"."+k]=m});
   if(num(c.D6)>num(c.D5))e[i+".D6"]="Dépasse la production";
+  const L4=srcs(f.a);if(L4.length>=2&&num(c.E4q)>0){let sv=0;L4.forEach(k=>{["E4v","E4p"].forEach(z=>{const m=fieldErr("dec",c[z+k],0,z==="E4v"?1e6:100);if(m)e[i+"."+z+k]=m});sv+=num(c["E4v"+k])||0});
+   if(Math.abs(sv-num(c.E4q))>0.05*num(c.E4q))e[i+".E4q"]=`La somme des volumes par source (${fmt(sv)}) doit être égale au volume total`}
   const it=(x,k,pre)=>{["u","q","p"].forEach(z=>{const m=fieldErr(z==="u"?"one":"dec",x[z],0,z==="q"?1e7:1e6);if(m)e[pre+z]=m});if(z0(x.q))e[pre+"q"]="Quantité > 0"};
   if(c.E2==="1"){const L=c.E2l||[];if(!L.length)e[i+".E2l"]="Ajouter au moins un engrais (ou répondre Non).";
    L.forEach((x,k)=>{const pre=`${i}.E2l.${k}.`;if(emptyVal(x.t))e[pre+"t"]="Obligatoire";it(x,k,pre)})}
@@ -563,13 +591,17 @@ function checkElevage(f){
  ks.forEach(k=>{const x=el[k];
   if(k==="autre"&&emptyVal(x.Lp))e[k+".Lp"]="Obligatoire";
   ELV_FIELDS.forEach(([fk,l,t,o1,o2])=>{
-   if((fk==="L4"||fk==="L5"||fk==="L5pr")&&!(num(x.L3)>0))return;
-   if(fk==="L5pr"&&x.L5!=="8")return;
-   if(fk==="L8pr"&&x.L8!=="8")return;
-   if((fk==="L7"||fk==="L8"||fk==="L8pr")&&!(num(x.L6)>0))return;
    if(/^L\d+[up]$/.test(fk)&&!(num(x[fk.slice(0,-1)+"q"])>0))return;
    const m=fieldErr(t,x[fk],o1,o2);if(m)e[k+"."+fk]=m});
-  if(num(x.L3)>num(x.L2)&&x.L2u!=="t")e[k+".L3"]="Dépasse la production";
+  (PRODUITS[k]||[]).forEach(([c])=>{const p=(x.P||{})[c];if(!p)return;const pre=`${k}.P.${c}.`,put=(z,m)=>{if(m)e[pre+z]=m};
+   if(needName(c))put("nom",fieldErr("text",p.nom));
+   put("u",fieldErr("one",p.u));put("q",fieldErr("dec",p.q,0,1e9));put("v",fieldErr("dec",p.v,0,1e9));
+   if(z0(p.q))e[pre+"q"]="Production > 0";
+   if(num(p.v)>num(p.q))e[pre+"v"]="Dépasse la production";
+   if(num(p.v)>0){put("p",fieldErr("dec",p.p,0,1e7));put("c",fieldErr("one",p.c));if(p.c==="8")put("cp",fieldErr("text",p.cp))}});
+  (ANIMAUX[k]||[]).forEach(([c])=>{const p=(x.A||{})[c];if(!p)return;const pre=`${k}.A.${c}.`,put=(z,m)=>{if(m)e[pre+z]=m};
+   if(needName(c))put("nom",fieldErr("text",p.nom));
+   put("n",fieldErr("int",p.n,1,1e6));put("p",fieldErr("dec",p.p,0,1e7));put("c",fieldErr("one",p.c));if(p.c==="8")put("cp",fieldErr("text",p.cp))});
  });
  return e;
 }
@@ -604,7 +636,7 @@ function renderQ(q,f){
   if(q.id==="gps")h+=`<div class="row"><button class="btn small" data-act="gps">Relever la position du téléphone</button></div><input type="text" id="gpslink" placeholder="ou coller un lien de carte" data-gps="1">`;
  }else if(q.t==="rank"){
   h+=`<div class="qt">${head}</div><div class="inline">`;
-  for(let r=0;r<q.n;r++){const cur=(v||[])[r]||"";h+=`<label>Priorité ${r+1}<select id="${q.id}-${r}" data-k="${q.id}" data-rank="${r}"><option value="">—</option>${q.o.map(([c,l])=>`<option value="${c}" ${cur===c?"selected":""}>${esc(l)}</option>`).join("")}</select></label>`}
+  for(let r=0;r<q.n;r++){const cur=(v||[])[r]||"",dsc=(a[q.id+"d"]||[])[r]||"";h+=`<label>Priorité ${r+1}<select id="${q.id}-${r}" data-k="${q.id}" data-rank="${r}"><option value="">—</option>${q.o.map(([c,l])=>`<option value="${c}" ${cur===c?"selected":""}>${esc(l)}</option>`).join("")}</select></label><label>Description<input type="text" id="${q.id}-d${r}" value="${esc(dsc)}" data-k="${q.id}" data-rankd="${r}" placeholder="détails propres à l'exploitant"></label>`}
   h+=`</div>`;
  }else if(q.t==="textarea"){
   h+=`<label class="qt" for="in-${q.id}">${head}</label><textarea id="in-${q.id}" data-k="${q.id}">${esc(v||"")}</textarea>`;
@@ -629,16 +661,25 @@ function renderCultures(f){
  (f.cult||[]).forEach((c,i)=>{
   const D=CULT_FIELDS.filter(x=>x[0][0]==="D").filter(x=>!(x[0]==="D1p"&&!D1_AUTRE.includes(c.D1))&&!(x[0]==="D8p"&&c.D8!=="7"));
   const E=CULT_FIELDS.filter(x=>x[0][0]==="E");
-  const k=cultCalc(c);
+  const k=cultCalc(c,f.a);
   h+=`<div class="card"><h3><span class="code">Culture ${i+1}</span>${esc((CULTURES.find(x=>x[0]===c.D1)||[,""])[1]||"à choisir")}</h3>
    <div class="eyebrow" style="margin-top:10px">Production et vente (D)</div><div class="inline">${D.map(([fk,l,t,o])=>fld(`c${i}-${fk}`,l,t,o,c[fk],S.errors[i+"."+fk],`data-c="${i}" data-f="${fk}"`)).join("")}</div>
    ${k.rdt!=null?`<div class="calc" style="margin-top:8px">Rendement : ${fmt(k.rdt,1)} t/ha${k.pbHa!=null?` · produit brut : ${fmt(k.pbHa)} DH/ha`:""}</div>`:""}
    <div class="eyebrow" style="margin-top:12px">Charges par hectare (E)</div>${qpRows(E.filter(z=>/^E1[qup]$/.test(z[0])),c,`c${i}`,i+".",`data-c="${i}"`,"DH/ha")}
    ${engHtml(c,i)}${phyHtml(c,i,"E3m")}${phyHtml(c,i,"E3r")}
-   ${qpRows(E.filter(z=>/^E(4|5|6|7|8|9|1[0-3])/.test(z[0])),c,`c${i}`,i+".",`data-c="${i}"`,"DH/ha")}
+   ${e4Html(c,i,f.a)}${qpRows(E.filter(z=>/^E(5|6|7|8|9|1[0-3])/.test(z[0])),c,`c${i}`,i+".",`data-c="${i}"`,"DH/ha")}
    ${k.pbHa!=null?`<div class="calc" style="margin-top:8px">Charges : ${fmt(k.ciHa+k.moHa)} DH/ha · marge brute : ${fmt(k.mbHa)} DH/ha</div>`:""}</div>`;
  });
  if(S.errors._sup)h+=`<div class="banner bad">${esc(S.errors._sup)}</div>`;
+ return h;
+}
+// E4 : volume total puis, si plusieurs sources en C1, volume et prix de chaque source
+function e4Html(c,i,a){
+ const L=srcs(a),d=k=>`data-c="${i}" data-f="${k}"`,er=k=>S.errors[i+"."+k];
+ let h=`<div class="inline" style="margin-top:8px">${fld(`c${i}-E4q`,"E4 Eau d'irrigation : volume total (m³ / ha)","dec",null,c.E4q,er("E4q"),d("E4q"))}`;
+ if(L.length>=2){h+=`</div>`;L.forEach(k=>{const n=srcName(a,k);h+=`<div class="inline" style="margin-top:6px">${fld(`c${i}-E4v${k}`,`Volume – ${n} (m³ / ha)`,"dec",null,c["E4v"+k],er("E4v"+k),d("E4v"+k))}${fld(`c${i}-E4p${k}`,`Prix unitaire – ${n} (DH / m³)`,"dec",null,c["E4p"+k],er("E4p"+k),d("E4p"+k))}</div>`})}
+ else h+=`${fld(`c${i}-E4p`,`E4 Prix de l'eau${L.length===1?" – "+srcName(a,L[0]):""} (DH / m³)`,"dec",null,c.E4p,er("E4p"),d("E4p"))}</div>`;
+ if(num(c.E4q)!=null)h+=`<div class="calc" style="margin-top:4px">Coût E4 : ${fmt(waterCost(c,a))} DH/ha${L.length>=2?` · somme des volumes par source : ${fmt(L.reduce((t,k)=>t+(num(c["E4v"+k])||0),0))} m³/ha`:""}</div>`;
  return h;
 }
 // Listes E2 (engrais) et E3 (traitements par maladie / ravageur)
@@ -686,18 +727,33 @@ function qpRows(fields,o,idp,ep,data,unit){
   const cost=isQP&&num(o[p+"q"])!=null?`<div class="calc" style="margin-top:4px">Coût ${esc(p)} : ${fmt(qp(o,p))} ${unit}</div>`:"";
   return`<div class="inline" style="margin-top:8px">${zs.map(([fk,l,t,op])=>fld(`${idp}-${fk}`,l,t,op,o[fk],S.errors[ep+fk],`${data} data-f="${fk}"`)).join("")}</div>${cost}`}).join("");
 }
+// Produits issus des animaux (P) et ventes d'animaux (A) : choix à cocher, chaque choix ouvre ses cases
+function elvItems(k,x,g){
+ const L=g==="P"?PRODUITS[k]:ANIMAUX[k],cur=x[g]||{};
+ let h=`<div class="eyebrow" style="margin-top:12px">${g==="P"?"Produits issus des animaux (campagne 2025-2026)":"Ventes d'animaux (campagne 2025-2026)"}</div><div class="choices">`;
+ L.forEach(([c,l])=>{const on=!!cur[c];h+=`<label class="chip${on?" on":""}"><input type="checkbox" value="${c}" ${on?"checked":""} data-elvg="${k}|${g}">${esc(l)}</label>`});
+ h+=`</div>`;
+ L.filter(([c])=>cur[c]).forEach(([c,l])=>{const it=cur[c],pre=`${k}.${g}.${c}.`,id=`e-${k}-${g}-${c}`,d=z=>`data-e="${k}" data-g="${g}" data-n="${c}" data-f="${z}"`,F=(z,lab,t,o)=>fld(`${id}-${z}`,lab,t,o,it[z],S.errors[pre+z],d(z));
+  let r=needName(c)?F("nom",g==="P"?"Préciser le produit":"Préciser la catégorie","text"):"";
+  if(g==="P"){const un=(prodUnits(c).find(o=>o[0]===it.u)||[,"unité"])[1];
+   r+=F("u","Unité","one",prodUnits(c))+F("q","Production totale","dec")+F("v","Quantité vendue totale","dec");
+   if(num(it.v)>0)r+=F("p",`Prix unitaire (DH / ${({litres:"litre",remorques:"remorque",tonnes:"tonne","nombre d'œufs":"œuf","plateaux de 30":"plateau",nombre:"unité","autre unité":"unité"})[un]||un})`,"dec")+F("c","Circuit principal","one",CIRC_P)+(it.c==="8"?F("cp","Préciser le circuit","text"):"");
+   h+=`<div style="margin-top:8px;padding-left:10px;border-left:3px solid var(--line,#ccc)"><b>${esc(l)}</b><div class="inline">${r}</div>${num(it.q)>0&&num(it.v)!=null?`<div class="calc" style="margin-top:4px">Part vendue : ${fmt(num(it.v)/num(it.q)*100)} %${num(it.v)>0&&num(it.p)!=null?` · ventes : ${fmt(num(it.v)*num(it.p))} DH`:""}</div>`:""}</div>`}
+  else{r+=F("n","Nombre vendu","int")+F("p",k==="ruch"?"Prix unitaire (DH / unité)":"Prix unitaire (DH / tête)","dec")+F("c","Circuit principal","one",CIRC_A)+(it.c==="8"?F("cp","Préciser le circuit","text"):"");
+   h+=`<div style="margin-top:8px;padding-left:10px;border-left:3px solid var(--line,#ccc)"><b>${esc(l)}</b><div class="inline">${r}</div>${num(it.n)!=null&&num(it.p)!=null?`<div class="calc" style="margin-top:4px">Valeur des ventes : ${fmt(num(it.n)*num(it.p))} DH</div>`:""}</div>`}});
+ return h;
+}
 function renderElevage(f){
  const el=f.elv||{};
  let h=`<div class="q"><div class="qt"><span class="code">L0</span>Activités d'élevage pratiquées</div><div class="choices">`;
  ACTIVITES.forEach(([k,l])=>{const on=!!el[k];h+=`<label class="chip${on?" on":""}"><input type="checkbox" value="${k}" ${on?"checked":""} data-elvsel="1">${esc(l)}</label>`});
- h+=`</div>${S.errors._elv?`<div class="err-msg">${esc(S.errors._elv)}</div>`:""}<div class="hint">Remplir une activité entière (effectif, production, ventes, charges) avant de passer à la suivante.</div></div>`;
+ h+=`</div>${S.errors._elv?`<div class="err-msg">${esc(S.errors._elv)}</div>`:""}<div class="hint">Vaches laitières : uniquement les vaches. Veaux, taurillons et bœufs : cocher « Bovins viande ». Remplir une activité entière (effectif, produits, ventes d'animaux, charges) avant de passer à la suivante.</div></div>`;
  ACTIVITES.filter(([k])=>el[k]).forEach(([k,l])=>{const x=el[k],c=elvCalc(x);
   const F=(keys)=>ELV_FIELDS.filter(z=>keys.includes(z[0])).map(([fk,ll,t,o])=>fld(`e-${k}-${fk}`,ll,t,o,x[fk],S.errors[k+"."+fk],`data-e="${k}" data-f="${fk}"`)).join("");
   h+=`<div class="card"><h3><span class="code">Activité</span>${esc(l)}</h3>
    ${k==="autre"?`<div class="inline">${fld(`e-${k}-Lp`,"Préciser l'activité","text",null,x.Lp,S.errors[k+".Lp"],`data-e="${k}" data-f="Lp"`)}</div>`:""}
-   <div class="eyebrow" style="margin-top:10px">Effectif et production</div><div class="inline">${F(["L1","L2","L2u"])}</div>
-   <div class="eyebrow" style="margin-top:12px">Ventes de produits (lait, œufs, miel, laine)</div><div class="inline">${F(["L3","L4","L5"].concat(x.L5==="8"?["L5pr"]:[]))}</div>
-   <div class="eyebrow" style="margin-top:12px">Ventes d'animaux</div><div class="inline">${F(["L6","L7","L8"].concat(x.L8==="8"?["L8pr"]:[]))}</div>
+   <div class="eyebrow" style="margin-top:10px">Effectif actuel (jour de l'enquête)</div><div class="inline">${fld(`e-${k}-L1`,"L1 "+EFF_LBL[k],"int",null,x.L1,S.errors[k+".L1"],`data-e="${k}" data-f="L1"`)}</div>
+   ${elvItems(k,x,"P")}${elvItems(k,x,"A")}
    <div class="eyebrow" style="margin-top:12px">Charges de l'activité sur la campagne : quantité × prix unitaire</div>${qpRows(ELV_FIELDS.filter(z=>/^L(9|1[0-3])/.test(z[0])),x,`e-${k}`,k+".",`data-e="${k}"`,"DH")}
    <div class="calc" style="margin-top:8px">Ventes : ${fmt(c.ventes)} DH · charges : ${fmt(c.ci+c.mo)} DH · marge brute : ${fmt(c.mb)} DH</div></div>`;
  });
@@ -705,7 +761,7 @@ function renderElevage(f){
  return h;
 }
 function fmt(n,d=0){return n==null||isNaN(n)?"—":Number(n).toLocaleString("fr-FR",{maximumFractionDigits:d,minimumFractionDigits:d})}
-function sig(){const f=S.form;if(!f)return"";const m=MODULES[S.mod],a=f.a;return visibleMods(f).join(",")+"|"+(m.qs||[]).filter(q=>qVisible(q,f)).map(q=>q.id).join(",")+"|"+(m.id==="mC"?JSON.stringify(volume(a)):"")+"|"+(m.id==="m0"?a.strate+classeOf(a.B1)+a.idExpl:"")+"|"+(m.custom==="elevage"?Object.keys(f.elv||{}).map(k=>k+(num(f.elv[k].L3)>0)+(num(f.elv[k].L6)>0)+JSON.stringify(elvCalc(f.elv[k]))).join(""):"")+"|"+(m.custom==="cultures"?JSON.stringify((f.cult||[]).map(c=>[cultCalc(c),E_QP.map(x=>qp(c,x)),(c.E2l||[]).map(x=>[x.q,x.p]),[c.E3ml,c.E3rl].map(L=>(L||[]).map(m=>(m.tr||[]).map(x=>[x.q,x.p])))])):"")}
+function sig(){const f=S.form;if(!f)return"";const m=MODULES[S.mod],a=f.a;return visibleMods(f).join(",")+"|"+(m.qs||[]).filter(q=>qVisible(q,f)).map(q=>q.id).join(",")+"|"+(m.id==="mC"?JSON.stringify(volume(a)):"")+"|"+(m.id==="m0"?a.strate+classeOf(a.B1)+a.idExpl:"")+"|"+(m.custom==="elevage"?Object.keys(f.elv||{}).map(k=>k+JSON.stringify(Object.entries(f.elv[k].P||{}).map(([c,x])=>[c,num(x.v)>0,num(x.q)>0]))+JSON.stringify(elvCalc(f.elv[k]))).join(""):"")+"|"+(m.custom==="cultures"?JSON.stringify((f.cult||[]).map(c=>[cultCalc(c,a),E_QP.map(x=>qp(c,x)),(c.E2l||[]).map(x=>[x.q,x.p]),[c.E3ml,c.E3rl].map(L=>(L||[]).map(m=>(m.tr||[]).map(x=>[x.q,x.p])))])):"")}
 function quotaNote(f){
  const a=f.a,cl=classeOf(a.B1);if(!a.strate||!cl||stopped(f))return"";
  const q=quotaOf(a.strate,cl),n=quotaCounts()[a.strate+"-"+cl]||0;
@@ -774,6 +830,8 @@ function renderHome(){
  if(S.outbox.length-blocked>0)h+=`<div class="banner warn row"><span>${S.outbox.length-blocked} questionnaire(s) finalisé(s) pas encore envoyé(s).</span><span class="spacer"></span><button class="btn small" data-act="sync" ${navigator.onLine?"":"disabled"}>Envoyer maintenant</button></div>`;
  if(drafts.length){h+=`<div class="panel"><h2>Brouillons</h2>${drafts.map(d=>`<div class="list-item"><div class="l"><b class="mono">${esc(d.a.idExpl||"sans identifiant")}</b><span class="muted">Modifié ${new Date(d.updatedAt).toLocaleString("fr-FR")}</span></div><div class="row"><button class="btn small" data-resume="${d.id}">Reprendre</button><button class="btn small danger" data-deldraft="${d.id}">Supprimer</button></div></div>`).join("")}</div>`}
  h+=`<details class="panel"${S.quotaOpen?" open":""} data-quota="1"><summary><b>Avancement de l'équipe par territoire et classe de superficie</b></summary><p class="hint">Questionnaires complets / prévus${S.quotaAt?` – état au ${new Date(S.quotaAt).toLocaleString("fr-FR")}, plus les envois en attente de cette tablette`:""}. En vert : case remplie.</p>${quotaTable(qc,false)}</details>`;
+ {const pe=Object.assign({},S.quotaEnq||{}),me=String(S.user.code||"").trim().toUpperCase();S.outbox.forEach(s=>{if(s.status==="complet"&&!s._err)pe[me]=(pe[me]||0)+1});
+  h+=`<details class="panel"${S.enqOpen?" open":""} data-enq="1"><summary><b>Nombre d'enquêtes par enquêteur</b></summary><p class="hint">Questionnaires complets (rejetés exclus)${S.quotaAt?` – état au ${new Date(S.quotaAt).toLocaleString("fr-FR")}, plus les envois en attente de cette tablette`:""}.</p>${S.quotaEnq==null&&!Object.keys(pe).length?`<p class="muted">Touchez « Actualiser » avec du réseau pour afficher ce tableau.</p>`:`<div class="tablewrap"><table><thead><tr><th>Enquêteur</th><th class="num">Nombre d'enquêtes</th></tr></thead><tbody>${Object.keys(pe).sort().map(k=>`<tr><td class="mono">${esc(k)}${k===me?" (vous)":""}</td><td class="num">${pe[k]}</td></tr>`).join("")}<tr><td><b>Total</b></td><td class="num"><b>${Object.values(pe).reduce((x,y)=>x+y,0)}</b></td></tr></tbody></table></div>`}</details>`}
  const pend=S.outbox.map(s=>({id:s.id,idExpl:s.a.idExpl,strate:s.a.strate,classe:classeOf(s.a.B1),durMin:s.durMin,status:s.status,endedAt:s.endedAt,_pending:true,_err:s._err}));
  const sent=[...pend,...S.mine.filter(m=>!S.outbox.some(o=>o.id===m.id))].sort((x,y)=>(y.endedAt||0)-(x.endedAt||0));
  h+=`<div class="panel"><div class="row"><h2>Questionnaires finalisés</h2><span class="spacer"></span><button class="btn small" data-act="refresh" ${navigator.onLine?"":"disabled"}>${S.loading?"Actualisation…":"Actualiser"}</button></div>`;
@@ -820,21 +878,27 @@ function renderAdmin(){
  }
  app.innerHTML=h+`</div>`;
 }
+function elvDetail(k,e){
+ const nm=(L,c,x)=>(needName(c)&&x.nom?x.nom:(L.find(z=>z[0]===c)||[,c])[1]);
+ const p=Object.entries(e.P||{}).map(([c,x])=>`<dt>Produit · ${esc(nm(PRODUITS[k]||[],c,x))}</dt><dd>${esc(`production ${x.q??"—"} ${(prodUnits(c).find(o=>o[0]===x.u)||[,x.u||""])[1]} · vendu ${x.v??"—"}${num(x.v)>0?` à ${x.p??"—"} DH · ${(CIRC_P.find(o=>o[0]===x.c)||[,"—"])[1]}${x.c==="8"&&x.cp?" ("+x.cp+")":""}`:""}`)}</dd>`).join("");
+ const a=Object.entries(e.A||{}).map(([c,x])=>`<dt>Vente d'animaux · ${esc(nm(ANIMAUX[k]||[],c,x))}</dt><dd>${esc(`${x.n??"—"} × ${x.p??"—"} DH · ${(CIRC_A.find(o=>o[0]===x.c)||[,"—"])[1]}${x.c==="8"&&x.cp?" ("+x.cp+")":""}`)}</dd>`).join("");
+ return p+a;
+}
 function renderDetail(s,sum){
  const d=derive(s),v=sum&&sum.validation;
- const rows=[];MODULES.forEach(m=>{(m.qs||[]).forEach(q=>{const x=s.a[q.id];if(emptyVal(x))return;rows.push([`${q.code||q.id} ${q.l}`,fmtAns(q,x)])})});
+ const rows=[];MODULES.forEach(m=>{(m.qs||[]).forEach(q=>{const x=s.a[q.id];if(emptyVal(x))return;rows.push([`${q.code||q.id} ${q.l}`,fmtAns(q,x,s.a)])})});
  const lab=(F,x,k)=>F.filter(z=>!emptyVal(x[z[0]])).map(z=>`<dt>${esc(z[0]+" "+z[1])}</dt><dd>${esc(z[2]==="one"?((z[3].find(o=>o[0]===x[z[0]])||[,x[z[0]]])[1]):x[z[0]])}</dd>`).join("");
  return`<div class="panel detail stack" id="detail"><div class="row"><h2 class="mono">${esc(s.a.idExpl)}</h2><span class="spacer"></span><button class="btn small ghost" data-act="closedetail">Fermer</button></div>
  <div class="grid"><div class="kpi"><b class="mono" style="font-size:20px">${d.vol!=null?fmt(d.vol)+" m³":"—"}</b><span>volume d'eau (${esc(d.volSrc||"—")})</span></div><div class="kpi"><b class="mono" style="font-size:20px">${d.va!=null?fmt(d.va)+" DH":"—"}</b><span>valeur ajoutée</span></div><div class="kpi"><b class="mono" style="font-size:20px">${d.prodEau!=null?fmt(d.prodEau,2)+" DH/m³":"—"}</b><span>productivité de l'eau</span></div><div class="kpi"><b style="font-size:16px">${esc(CLASSES[d.classe]||"—")} · ${esc(d.mode)}</b><span>classe · mode de production</span></div></div>
  <dl>${rows.map(([k,x])=>`<dt>${esc(k)}</dt><dd>${esc(x)}</dd>`).join("")}</dl>
- ${(s.cult||[]).map((c,i)=>{const k=cultCalc(c);return`<div class="card"><h3>Culture ${i+1} · ${esc((CULTURES.find(x=>x[0]===c.D1)||[,""])[1])}</h3><div class="calc">Rendement ${fmt(k.rdt,1)} t/ha · produit brut ${fmt(k.pbHa)} DH/ha · marge brute ${fmt(k.mbHa)} DH/ha</div><dl>${lab(CULT_FIELDS,c)}</dl>${intrList(c)}</div>`}).join("")}
- ${Object.keys(s.elv||{}).map(k=>{const e=s.elv[k],x=elvCalc(e);return`<div class="card"><h3>Élevage · ${esc((ACTIVITES.find(z=>z[0]===k)||[,k])[1])}${e.Lp?" ("+esc(e.Lp)+")":""}</h3><div class="calc">Ventes ${fmt(x.ventes)} DH · marge brute ${fmt(x.mb)} DH</div><dl>${lab(ELV_FIELDS,e)}</dl></div>`}).join("")}
+ ${(s.cult||[]).map((c,i)=>{const k=cultCalc(c,s.a);return`<div class="card"><h3>Culture ${i+1} · ${esc((CULTURES.find(x=>x[0]===c.D1)||[,""])[1])}</h3><div class="calc">Rendement ${fmt(k.rdt,1)} t/ha · produit brut ${fmt(k.pbHa)} DH/ha · marge brute ${fmt(k.mbHa)} DH/ha</div><dl>${lab(CULT_FIELDS,c)}</dl>${intrList(c)}</div>`}).join("")}
+ ${Object.keys(s.elv||{}).map(k=>{const e=s.elv[k],x=elvCalc(e);return`<div class="card"><h3>Élevage · ${esc((ACTIVITES.find(z=>z[0]===k)||[,k])[1])}${e.Lp?" ("+esc(e.Lp)+")":""}</h3><div class="calc">Ventes ${fmt(x.ventes)} DH · marge brute ${fmt(x.mb)} DH</div><dl>${lab(ELV_FIELDS,e)}${elvDetail(k,e)}</dl></div>`}).join("")}
  <div class="row"><input type="text" id="motif" placeholder="Motif en cas de rejet" style="flex:1;min-width:200px" value="${esc(v&&v.motif||"")}"><button class="btn primary" data-valid="approuve" data-id="${s.id}">Approuver</button><button class="btn danger" data-valid="rejete" data-id="${s.id}">Rejeter</button></div></div>`;
 }
-function fmtAns(q,x){
+function fmtAns(q,x,a){
  if(q.t==="group")return q.f.map(([k,l])=>`${l} : ${x[k]??"—"}`).join(" · ");
  if(q.t==="grid")return q.rows.map(([k,l])=>`${l} : ${(q.o.find(o=>o[0]===x[k])||[,"—"])[1]}`).join(" · ");
- if(q.t==="rank")return(x||[]).filter(Boolean).map(c=>(q.o.find(o=>o[0]===c)||[,c])[1]).join(" > ");
+ if(q.t==="rank")return(x||[]).map((c,k)=>c?(q.o.find(o=>o[0]===c)||[,c])[1]+(a&&(a[q.id+"d"]||[])[k]?" ("+a[q.id+"d"][k]+")":""):"").filter(Boolean).join(" > ");
  const o=Array.isArray(q.o)?q.o:null;
  if(q.t==="one"&&o)return(o.find(z=>z[0]===x)||[,x])[1];
  if(q.t==="multi"&&o)return x.map(c=>(o.find(z=>z[0]===c)||[,c])[1]).join(", ");
@@ -901,7 +965,7 @@ document.addEventListener("submit",async ev=>{
  try{const j=await api("login",{},{code,pin});S.user={code:j.user.code,nom:j.user.nom,role:j.user.role,pin};LS.set("redi_user",S.user);S.note="";S.view="home";render();await refresh();sync()}
  catch(e){S.note=ERR[e.code]||"Connexion impossible.";render()}
 });
-document.addEventListener("toggle",ev=>{if(ev.target.dataset&&ev.target.dataset.quota)S.quotaOpen=ev.target.open},true);
+document.addEventListener("toggle",ev=>{if(ev.target.dataset&&ev.target.dataset.quota)S.quotaOpen=ev.target.open;if(ev.target.dataset&&ev.target.dataset.enq)S.enqOpen=ev.target.open},true);
 document.addEventListener("click",async ev=>{
  const b=ev.target.closest("button");if(!b)return;
  const d=b.dataset;
@@ -945,7 +1009,9 @@ document.addEventListener("change",ev=>{
  else if(d.rank!=null){a[d.k]=a[d.k]||[];a[d.k][+d.rank]=el.value}
  else if(d.nsp){a[d.nsp]=el.checked?"NSP":""}
  else if(d.ncult){const n=+el.value;f.nCult=n;f.cult=(f.cult||[]).slice(0,n);while(f.cult.length<n)f.cult.push({})}
- else if(d.elvsel){f.elv=f.elv||{};if(el.checked)f.elv[el.value]=f.elv[el.value]||{L2u:UNITE_DEF[el.value]};else delete f.elv[el.value]}
+ else if(d.elvsel){f.elv=f.elv||{};if(el.checked)f.elv[el.value]=f.elv[el.value]||{};else delete f.elv[el.value]}
+ else if(d.elvg){const [k,g]=d.elvg.split("|"),x=f.elv[k];x[g]=Object.assign({},x[g]);if(el.checked){const U=g==="P"?prodUnits(el.value):null;x[g][el.value]=x[g][el.value]||(U&&U.length===1?{u:U[0][0]}:{})}else delete x[g][el.value]}
+ else if(d.g&&el.tagName==="SELECT"){const x=f.elv[d.e];x[d.g][d.n][d.f]=el.value}
  else if(d.l&&el.tagName==="SELECT"){listTarget(f,d)[d.f]=el.value}
  else if(d.c!=null&&el.tagName==="SELECT"){const c=f.cult[+d.c];c[d.f]=el.value;
   if(d.f==="E2"&&el.value==="1"&&!(c.E2l||[]).length)c.E2l=[{}];
@@ -961,7 +1027,9 @@ document.addEventListener("input",ev=>{
  if(d.sub){a[d.k]=Object.assign({},a[d.k],{[d.sub]:el.value})}
  else if(d.l&&el.tagName==="INPUT"){listTarget(f,d)[d.f]=el.value}
  else if(d.c!=null&&el.tagName==="INPUT"){f.cult[+d.c][d.f]=el.value}
+ else if(d.g&&el.tagName==="INPUT"){f.elv[d.e][d.g][d.n][d.f]=el.value}
  else if(d.e!=null&&el.tagName==="INPUT"){f.elv[d.e][d.f]=el.value}
+ else if(d.rankd!=null){a[d.k+"d"]=(a[d.k+"d"]||[]).slice();a[d.k+"d"][+d.rankd]=el.value}
  else if(d.k&&(el.tagName==="INPUT"||el.tagName==="TEXTAREA")&&el.type!=="radio"&&el.type!=="checkbox"){a[d.k]=el.value}
  else return;
  persistDraft();
