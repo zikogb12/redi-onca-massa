@@ -189,7 +189,7 @@ const MODULES=[
  {id:"A11",t:"one",l:"Un membre du ménage vit-il avec un handicap ou une maladie de longue durée qui limite son activité ?",o:[["1","Oui"],["2","Non"],["9","Ne souhaite pas répondre"]]}
 ]},
 {id:"mB",code:"B",title:"Structure de l'exploitation",min:3,h:"La superficie exploitée (B1) est reprise de 0.9.",qs:[
- {id:"B2",t:"multi",l:"Mode de faire-valoir",o:[["1","Melk"],["2","Location"],["3","Association"],["4","Indivision"],["5","Autre"]]},
+ {id:"B2",t:"multi",l:"Mode de faire-valoir",o:[["1","Melk"],["2","Location"],["3","Association"],["4","Indivision"],["6","Terres collectives"],["7","Habous"],["5","Autre"]]},
  {id:"B2p",t:"text",l:"Préciser l'autre mode de faire-valoir",rel:a=>has(a.B2,"5")},
  {id:"B3",t:"dec",l:"Superficie irriguée",u:"ha",min:0,max:5000,chk:a=>num(a.B3)>num(a.B1)?"La superficie irriguée dépasse la superficie exploitée (0.9).":null},
  {id:"B4",t:"dec",l:"dont superficie en goutte-à-goutte",u:"ha",min:0,max:5000,chk:a=>num(a.B4)>num(a.B3)?"Le goutte-à-goutte dépasse la superficie irriguée.":null},
@@ -199,7 +199,7 @@ const MODULES=[
  {id:"B8",t:"one",l:"Le goutte-à-goutte a-t-il bénéficié d'une subvention du FDA ?",o:[["1","Oui"],["2","Non"],["3","Demande en cours"]],rel:a=>num(a.B4)>0},
  {id:"B9",t:"one",l:"Pratiquez-vous l'élevage (bétail, volailles, ruches) ?",o:YN}
 ]},
-{id:"mC",code:"C",title:"Eau d'irrigation",min:4,h:"Le coût de l'eau et de l'énergie est relevé par culture au module E.",qs:[
+{id:"mC",code:"C",title:"Eau d'irrigation",min:5,h:"Le coût de l'eau et de l'énergie est relevé par culture au module E.",qs:[
  {id:"C1",t:"multi",l:"Sources d'eau utilisées pendant la campagne",o:[["1","Puits / forage individuel"],["2","Puits collectif"],["3","Réseau collectif (ORMVASM)"],["4","Eau dessalée"],["5","Autre"]]},
  {id:"C1p",t:"text",l:"Préciser l'autre source d'eau",rel:a=>has(a.C1,"5")},
  {id:"C2",t:"one",l:"Source principale",o:a=>(a.C1||[]).map(c=>[c,MODULES[3].qs[0].o.find(x=>x[0]===c)[1]]),rel:a=>(a.C1||[]).length>1},
@@ -213,7 +213,10 @@ const MODULES=[
  {id:"C7",t:"multi",l:"Comment décidez-vous quand et combien irriguer ?",o:[["1","Habitude"],["2","Observation du sol / de la plante"],["3","Tensiomètre / sonde"],["4","Calcul selon l'ETP / météo"],["5","Conseil d'un technicien"],["6","Alerte reçue (SMS, application)"],["7","Tour d'eau imposé"]]},
  {id:"C8",t:"one",l:"Pratiquez-vous la fertigation ?",o:[["1","Oui, selon un programme"],["2","Oui, sans programme"],["3","Non"]],rel:a=>num(a.B4)>0},
  {id:"C9",t:"multi",l:"Au cours des 3 dernières campagnes, avez-vous constaté…",o:[["1","Baisse du niveau du puits"],["2","Eau plus salée"],["3","Coupures ou restrictions d'eau"],["4","Aucun changement"]],ex:["4"],rel:a=>has(a.C1,"1")||has(a.C1,"2")},
- {id:"C10",t:"grid",l:"Êtes-vous satisfait de l'eau d'irrigation dont vous disposez ?",rows:[["qte","En quantité"],["qual","En qualité"]],o:[["1","Très satisfait"],["2","Satisfait"],["3","Peu satisfait"],["4","Pas satisfait"]]}
+ {id:"C10",t:"grid",l:"Êtes-vous satisfait de l'eau d'irrigation dont vous disposez ?",rows:[["qte","En quantité"],["qual","En qualité"]],o:[["1","Très satisfait"],["2","Satisfait"],["3","Peu satisfait"],["4","Pas satisfait"]]},
+ {id:"C11",t:"one",l:"Utilisez-vous un dispositif d'osmose inverse (dessalement de l'eau du puits) sur l'exploitation ?",o:[["1","Oui, individuel"],["2","Oui, partagé avec d'autres exploitants"],["3","Non"]],rel:a=>has(a.C1,"1")||has(a.C1,"2")},
+ {id:"C12",t:"multi",l:"Que faites-vous des rejets de l'osmose (saumures) ?",o:[["1","Rejet sur le sol / dans la parcelle"],["2","Rejet dans un oued, une chaâba ou un fossé"],["3","Bassin d'évaporation"],["4","Réinjection dans un puits / forage"],["5","Réutilisation (mélange pour l'irrigation, cultures tolérantes…)"],["6","Évacuation hors de l'exploitation"],["7","Autre"]],rel:a=>(has(a.C1,"1")||has(a.C1,"2"))&&(a.C11==="1"||a.C11==="2")},
+ {id:"C12p",t:"text",l:"Préciser l'autre devenir des saumures",rel:a=>(has(a.C1,"1")||has(a.C1,"2"))&&(a.C11==="1"||a.C11==="2")&&has(a.C12,"7")}
 ]},
 {id:"mD",code:"D–E",title:"Cultures, production et charges",min:17,custom:"cultures"},
 {id:"mL",code:"L",title:"Élevage",min:4,rel:a=>a.B9==="1",custom:"elevage",qs:[
@@ -258,14 +261,24 @@ const MODULES=[
  {id:"H3a",code:"H3b",t:"text",l:"Partenaire (agrégateur ou agrégés)",req:false,rel:a=>a.H2==="1"},
  {id:"H4",t:"one",l:"Avez-vous une alliance commerciale avec des acheteurs (station, exportateur, industriel, grande distribution) ?",o:[["1","Oui, contrat écrit"],["2","Oui, accord verbal"],["3","Non"]]}
 ]},
-{id:"mI",code:"I",title:"Climat et adaptation",min:2,qs:[
+{id:"mI",code:"I",title:"Climat et adaptation",min:4,qs:[
  {id:"I1",t:"multi",l:"Au cours des 3 dernières campagnes, quels événements ont réduit votre production ?",o:[["0","Aucun"],["1","Manque d'eau"],["2","Forte chaleur"],["3","Froid / gel"],["4","Vent / tempête"],["5","Inondation / grêle"],["6","Maladie ou ravageur grave"],["7","Autre"]],ex:["0"]},
  {id:"I1p",t:"text",l:"Préciser l'autre événement",rel:a=>has(a.I1,"7")},
  {id:"I1b",t:"one",l:"Quel a été l'événement le plus grave ?",o:a=>(a.I1||[]).filter(c=>c!=="0").map(c=>[c,MODULES[9].qs[0].o.find(x=>x[0]===c)[1]]),rel:a=>(a.I1||[]).some(c=>c!=="0")},
  {id:"I1c",code:"I1b-2",t:"one",l:"Au cours de quelle campagne ?",o:[["2324","2023-2024"],["2425","2024-2025"],["2526","2025-2026"]],rel:a=>(a.I1||[]).some(c=>c!=="0")},
  {id:"I1d",code:"I1b-3",t:"int",l:"Part de la production de la culture principale perdue lors de cet événement",u:"%",min:0,max:100,rel:a=>(a.I1||[]).some(c=>c!=="0")},
  {id:"I2",t:"multi",l:"Pour faire face au manque d'eau ou au climat, qu'avez-vous changé ?",o:[["0","Rien"],["1","Calendrier de plantation"],["2","Culture moins exigeante en eau"],["3","Réduction de superficie"],["4","Passage au goutte-à-goutte"],["5","Paillage / serre"],["6","Nouvelle source d'eau"],["7","Autre"]],ex:["0"]},
- {id:"I2p",t:"text",l:"Préciser l'autre changement",rel:a=>has(a.I2,"7")}
+ {id:"I2p",t:"text",l:"Préciser l'autre changement",rel:a=>has(a.I2,"7")},
+ {id:"I3",t:"one",l:"Au cours des 5 dernières années, avez-vous abandonné une ou plusieurs cultures ?",o:YN},
+ {id:"I3a",t:"multi",l:"Quelles cultures avez-vous abandonnées ?",o:CULTURES,rel:a=>a.I3==="1"},
+ {id:"I3ap",t:"text",l:"Préciser la ou les autres cultures abandonnées",rel:a=>a.I3==="1"&&(a.I3a||[]).some(c=>D1_AUTRE.includes(c))},
+ {id:"I3b",t:"multi",l:"Pour quelles raisons ?",o:[["1","Manque d'eau"],["2","Salinité de l'eau ou du sol"],["3","Maladies ou ravageurs"],["4","Coût de l'eau ou de l'énergie"],["5","Prix ou débouchés"],["6","Main-d'œuvre"],["7","Autre"]],rel:a=>a.I3==="1"},
+ {id:"I3bp",t:"text",l:"Préciser l'autre raison d'abandon",rel:a=>a.I3==="1"&&has(a.I3b,"7")},
+ {id:"I4",t:"one",l:"Au cours des 5 dernières années, avez-vous introduit une ou plusieurs nouvelles cultures ?",o:YN},
+ {id:"I4a",t:"multi",l:"Quelles nouvelles cultures ?",o:CULTURES,rel:a=>a.I4==="1"},
+ {id:"I4ap",t:"text",l:"Préciser la ou les autres cultures introduites",rel:a=>a.I4==="1"&&(a.I4a||[]).some(c=>D1_AUTRE.includes(c))},
+ {id:"I4b",t:"multi",l:"Pour quelles raisons ?",o:[["1","Meilleur prix ou marge"],["2","Tolérance au sel ou à la sécheresse"],["3","Besoin en eau plus faible"],["4","Débouché ou contrat assuré"],["5","Conseil technique"],["6","Subvention"],["7","Autre"]],rel:a=>a.I4==="1"},
+ {id:"I4bp",t:"text",l:"Préciser l'autre raison d'introduction",rel:a=>a.I4==="1"&&has(a.I4b,"7")}
 ]},
 {id:"mJ",code:"J",title:"Travail et environnement",min:3,h:"Ton neutre : il ne s'agit pas d'un contrôle.",qs:[
  {id:"J1",t:"int",l:"Part des femmes dans la main-d'œuvre salariée de l'exploitation (permanente et saisonnière)",u:"%",min:0,max:100},
